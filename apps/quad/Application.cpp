@@ -89,11 +89,10 @@ Application::Application(int argc, char** argv):
         0, 1, 2, // First triangle
         0, 2, 3 // Second triangle
     };
-
+    
     glNamedBufferStorage(m_quadIBO, sizeof(quadIndices), quadIndices, 0);
 
     glCreateVertexArrays(1, &m_quadVAO);
-
     const GLint vboBindingIndex = 0; // Arbitrary choice between 0 and glGetIntegerv(GL_MAX_VERTEX_ATTRIB_BINDINGS)
 
     // Here we load and compile shaders from the library
