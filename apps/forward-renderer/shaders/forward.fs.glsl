@@ -14,14 +14,19 @@ uniform float uPointLightIntensity;
 
 uniform vec3 uKd;
 
+uniform sampler2D uKdSampler;
+
 out vec3 fColor;
 
 void main()
 {
+   vec4 texel = texture(uKdSampler, vTexCoords);
+
    float distToPointLight = length(uPointLightPosition - vViewSpacePosition);
    vec3 dirToPointLight = (uPointLightPosition - vViewSpacePosition) / distToPointLight;
 
    //fColor = vViewSpaceNormal;
-   fColor = uKd * ( uDirectionalLightColor * uDirectionalLightIntensity * max(0, dot(vViewSpaceNormal, uDirectionalLightDir))
-                  + uPointLightColor * uPointLightIntensity * max(0, dot(vViewSpaceNormal, dirToPointLight)) / (distToPointLight * distToPointLight));
+   fColor = texel.rgb * uKd *
+            ( uDirectionalLightColor * uDirectionalLightIntensity * max(0, dot(vViewSpaceNormal, uDirectionalLightDir))
+            + uPointLightColor * uPointLightIntensity * max(0, dot(vViewSpaceNormal, dirToPointLight)) / (distToPointLight * distToPointLight));
 }

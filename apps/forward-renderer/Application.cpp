@@ -5,6 +5,7 @@
 #include <imgui.h>
 #include <glmlv/imgui_impl_glfw_gl3.hpp>
 #include <glmlv/simple_geometry.hpp>
+#include <glmlv/Image2DRGBA.hpp>
 
 using namespace glmlv;
 
@@ -142,8 +143,13 @@ Application::Application(int argc, char** argv):
 {
     ImGui::GetIO().IniFilename = m_ImGuiIniFilename.c_str(); // At exit, ImGUI will store its windows positions in this file
 
+
+
+
     SimpleGeometry cube = makeCube();
     m_nbCubeIndexes = cube.indexBuffer.size();
+
+    readImage()
 
     glCreateBuffers(1, &m_cubeVBO);
     glNamedBufferStorage(m_cubeVBO, cube.vertexBuffer.size() * sizeof(Vertex3f3f2f), cube.vertexBuffer.data(), 0);
@@ -178,7 +184,9 @@ Application::Application(int argc, char** argv):
     m_uPointLightPosition_location = glGetUniformLocation(m_program.glId(), "uPointLightPosition");
     m_uPointLightColor_location = glGetUniformLocation(m_program.glId(), "uPointLightColor");
     m_uPointLightIntensity_location = glGetUniformLocation(m_program.glId(), "uPointLightIntensity");
+
     m_uKd_location = glGetUniformLocation(m_program.glId(), "uKd");
+    m_uKdSampler_location = glGetUniformLocation(m_program.glId(), "uKdSampler");
 
     // Here we use glGetAttribLocation(program, attribname) to obtain attrib locations; We could also directly use locations if they are set in the vertex shader (cf. triangle app)
 //    const GLint positionAttr_location = glGetAttribLocation(m_program.glId(), "aPosition");

@@ -4,6 +4,7 @@
 #include <glmlv/GLFWHandle.hpp>
 #include <glmlv/GLProgram.hpp>
 #include <glmlv/ViewController.hpp>
+#include <glmlv/Image2DRGBA.hpp>
 
 class Application
 {
@@ -34,7 +35,10 @@ private:
     GLuint m_uPointLightPosition_location;
     GLuint m_uPointLightColor_location;
     GLuint m_uPointLightIntensity_location;
+
     GLuint m_uKd_location;
+
+    GLuint m_uKdSampler_location;
 
     GLuint m_nbCubeIndexes;
     GLuint m_cubeVBO = 0;
@@ -45,6 +49,8 @@ private:
     GLuint m_sphereVBO = 0;
     GLuint m_sphereIBO = 0;
     GLuint m_sphereVAO = 0;
+
+    Image2DRGBA
 
     glmlv::GLProgram m_program;
 };
