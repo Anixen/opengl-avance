@@ -53,6 +53,10 @@ int Application::run()
         glm::mat4 NormalMatrix;
         glm::mat4 ModelViewProjMatrix;
 
+        glActiveTexture(GL_TEXTURE0);
+        glUniform1i(m_uKdSampler_location, 0); // Set the uniform to 0 because we use texture unit 0
+        glBindSampler(0, m_textureSampler); // Tell to OpenGL what sampler we want to use on this texture unit
+        glBindTextureUnit(0, m_cubeTextureKd);
         glBindVertexArray(m_cubeVAO);
 
         glm::mat4 cubeModelMatrix = glm::mat4();
@@ -72,6 +76,10 @@ int Application::run()
         glBindVertexArray(0);
 
 
+        glActiveTexture(GL_TEXTURE0);
+        glUniform1i(m_uKdSampler_location, 0); // Set the uniform to 0 because we use texture unit 0
+        glBindSampler(0, m_textureSampler); // Tell to OpenGL what sampler we want to use on this texture unit
+        glBindTextureUnit(0, m_sphereTextureKd);
         glBindVertexArray(m_sphereVAO);
 
         glm::mat4 sphereModelMatrix = glm::mat4();
@@ -138,18 +146,19 @@ Application::Application(int argc, char** argv):
     m_AppPath { glmlv::fs::path{ argv[0] } },
     m_AppName { m_AppPath.stem().string() },
     m_ImGuiIniFilename { m_AppName + ".imgui.ini" },
-    m_ShadersRootPath { m_AppPath.parent_path() / "shaders" }
+    m_ShadersRootPath { m_AppPath.parent_path() / "shaders" },
+    m_AssetsRootPath{ m_AppPath.parent_path() / "assets"}
 
 {
     ImGui::GetIO().IniFilename = m_ImGuiIniFilename.c_str(); // At exit, ImGUI will store its windows positions in this file
 
-
+    const GLint vboBindingIndex = 0; // Arbitrary choice between 0 and glGetIntegerv(GL_MAX_VERTEX_ATTRIB_BINDINGS)7
 
 
     SimpleGeometry cube = makeCube();
     m_nbCubeIndexes = cube.indexBuffer.size();
 
-    readImage()
+    //readImage()
 
     glCreateBuffers(1, &m_cubeVBO);
     glNamedBufferStorage(m_cubeVBO, cube.vertexBuffer.size() * sizeof(Vertex3f3f2f), cube.vertexBuffer.data(), 0);
@@ -169,10 +178,39 @@ Application::Application(int argc, char** argv):
     glNamedBufferStorage(m_sphereIBO, sphere.indexBuffer.size() * sizeof(uint32_t), sphere.indexBuffer.data(), 0);
     glCreateVertexArrays(1, &m_sphereVAO);
 
-    const GLint vboBindingIndex = 0; // Arbitrary choice between 0 and glGetIntegerv(GL_MAX_VERTEX_ATTRIB_BINDINGS)7
+    glActiveTexture(GL_TEXTURE0);
+    {
+        auto image = glmlv::readImage(m_AssetsRootPath / m_AppName / "textures" / "CloudMap.jpg");
+
+        glGenTextures(1, &m_cubeTextureKd);
+        glBindTexture(GL_TEXTURE_2D, m_cubeTextureKd);
+        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, image.width(), image.height());
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image.width(), image.height(), GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    {
+        auto image = glmlv::readImage(m_AssetsRootPath / m_AppName / "textures" / "EarthMap.jpg");
+
+        glGenTextures(1, &m_sphereTextureKd);
+        glBindTexture(GL_TEXTURE_2D, m_sphereTextureKd);
+        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, image.width(), image.height());
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image.width(), image.height(), GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    // Note: no need to bind a sampler for modifying it: the sampler API is already direct_state_access
+    glGenSamplers(1, &m_textureSampler);
+    glSamplerParameteri(m_textureSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glSamplerParameteri(m_textureSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+
+    glEnable(GL_DEPTH_TEST);
+
 
     // Here we load and compile shaders from the library
     m_program = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "forward.vs.glsl", m_ShadersRootPath / m_AppName / "forward.fs.glsl" });
+    m_program.use();
 
     m_uModelViewProjMatrix_location = glGetUniformLocation(m_program.glId(), "uModelViewProjMatrix");
     m_uModelViewMatrix_location = glGetUniformLocation(m_program.glId(), "uModelViewMatrix");
@@ -186,6 +224,7 @@ Application::Application(int argc, char** argv):
     m_uPointLightIntensity_location = glGetUniformLocation(m_program.glId(), "uPointLightIntensity");
 
     m_uKd_location = glGetUniformLocation(m_program.glId(), "uKd");
+
     m_uKdSampler_location = glGetUniformLocation(m_program.glId(), "uKdSampler");
 
     // Here we use glGetAttribLocation(program, attribname) to obtain attrib locations; We could also directly use locations if they are set in the vertex shader (cf. triangle app)
@@ -228,8 +267,4 @@ Application::Application(int argc, char** argv):
     glVertexArrayAttribFormat(m_sphereVAO, texCoordsAttr_location, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex3f3f2f, texCoords));
 
     glVertexArrayElementBuffer(m_sphereVAO, m_sphereIBO);
-
-    m_program.use();
-
-    glEnable(GL_DEPTH_TEST);
 }

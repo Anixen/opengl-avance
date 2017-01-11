@@ -24,6 +24,7 @@ private:
     const std::string m_AppName;
     const std::string m_ImGuiIniFilename;
     const glmlv::fs::path m_ShadersRootPath;
+    const glmlv::fs::path m_AssetsRootPath;
 
     GLuint m_uModelViewProjMatrix_location;
     GLuint m_uModelViewMatrix_location;
@@ -44,13 +45,15 @@ private:
     GLuint m_cubeVBO = 0;
     GLuint m_cubeIBO = 0;
     GLuint m_cubeVAO = 0;
+    GLuint m_cubeTextureKd = 0;
 
     GLuint m_nbSphereIndexes;
     GLuint m_sphereVBO = 0;
     GLuint m_sphereIBO = 0;
     GLuint m_sphereVAO = 0;
+    GLuint m_sphereTextureKd = 0;
 
-    Image2DRGBA
+    GLuint m_textureSampler = 0;
 
     glmlv::GLProgram m_program;
 };
