@@ -25,8 +25,11 @@ void main()
    float distToPointLight = length(uPointLightPosition - vViewSpacePosition);
    vec3 dirToPointLight = (uPointLightPosition - vViewSpacePosition) / distToPointLight;
 
-   //fColor = vViewSpaceNormal;
+
    fColor = texel.rgb * uKd *
             ( uDirectionalLightColor * uDirectionalLightIntensity * max(0, dot(vViewSpaceNormal, uDirectionalLightDir))
             + uPointLightColor * uPointLightIntensity * max(0, dot(vViewSpaceNormal, dirToPointLight)) / (distToPointLight * distToPointLight));
+   //*/
+   //fColor = vViewSpaceNormal;
+   //fColor = vec3(1, 1, 1);
 }

@@ -24,6 +24,7 @@ set(GLM_DIR glm-0.9.8.3)
 set(GLAD_DIR glad)
 set(JSON_DIR json-2.0.9)
 set(STB_DIR stb)
+set(TINYOBJLOADER_DIR tinyobjloader-1.0.5)
 
 add_subdirectory(third-party/${GLFW_DIR})
 
@@ -59,6 +60,7 @@ include_directories(
     third-party/${JSON_DIR}
     third-party/${IMGUI_DIR}
     third-party/${STB_DIR}
+    third-party/${TINYOBJLOADER_DIR}
     lib/include
 )
 
@@ -106,6 +108,7 @@ set(
     ${OPENGL_LIBRARIES}
     glfw
     glmlv
+
 )
 
 if(CMAKE_COMPILER_IS_GNUCXX AND NOT GLMLV_USE_BOOST_FILESYSTEM)

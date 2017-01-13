@@ -6,6 +6,16 @@
 #include <glmlv/ViewController.hpp>
 #include <glmlv/Image2DRGBA.hpp>
 
+#include <map>
+#include <tiny_obj_loader.h>
+
+typedef struct {
+    GLuint vb;  // vertex buffer
+    int numTriangles;
+    size_t material_id;
+} DrawObject;
+
+
 class Application
 {
 public:
@@ -26,20 +36,46 @@ private:
     const glmlv::fs::path m_ShadersRootPath;
     const glmlv::fs::path m_AssetsRootPath;
 
-    GLuint m_uModelViewProjMatrix_location;
-    GLuint m_uModelViewMatrix_location;
-    GLuint m_uNormalMatrix_location;
 
-    GLuint m_uDirectionalLightDir_location;
-    GLuint m_uDirectionalLightColor_location;
-    GLuint m_uDirectionalLightIntensity_location;
-    GLuint m_uPointLightPosition_location;
-    GLuint m_uPointLightColor_location;
-    GLuint m_uPointLightIntensity_location;
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
 
-    GLuint m_uKd_location;
+    std::vector<DrawObject> m_drawObjects;
 
-    GLuint m_uKdSampler_location;
+    std::string basedir = m_AssetsRootPath/ m_AppName / "models/nanosuit/";
+    std::string inputfile = basedir + "nanosuit.obj";
+
+    const GLint positionAttr_location = 0;
+    const GLint normalAttr_location = 1;
+    const GLint texCoordsAttr_location = 2;
+
+    GLint m_uModelViewProjMatrix_location;
+    GLint m_uModelViewMatrix_location;
+    GLint m_uNormalMatrix_location;
+
+    GLint m_uDirectionalLightDir_location;
+    GLint m_uDirectionalLightColor_location;
+    GLint m_uDirectionalLightIntensity_location;
+    GLint m_uPointLightPosition_location;
+    GLint m_uPointLightColor_location;
+    GLint m_uPointLightIntensity_location;
+
+    GLint m_uKd_location;
+
+    GLint m_uKdSampler_location;
+
+
+    GLuint m_VBO_vertices;
+    GLuint m_VBO_normals;
+    GLuint m_VBO_texcoords;
+
+    //std::vector<GLuint> m_IBOs;
+    std::vector<GLuint> m_VAOs;
+    std::vector<GLsizei> m_nbIndexes;
+
+    std::map<std::string, GLuint> m_textures;
+
 
     GLuint m_nbCubeIndexes;
     GLuint m_cubeVBO = 0;
@@ -52,6 +88,7 @@ private:
     GLuint m_sphereIBO = 0;
     GLuint m_sphereVAO = 0;
     GLuint m_sphereTextureKd = 0;
+    //*/
 
     GLuint m_textureSampler = 0;
 
