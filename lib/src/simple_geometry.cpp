@@ -1,5 +1,10 @@
+#define TINYOBJLOADER_IMPLEMENTATION // define this in only *one* .cc
+#include "tiny_obj_loader.h"
+
 #include <glmlv/simple_geometry.hpp>
 #include <glm/gtc/constants.hpp>
+#include <iostream>
+#include <tiny_obj_loader.h>
 
 namespace glmlv
 {
@@ -122,4 +127,47 @@ SimpleGeometry makeSphere(uint32_t subdivLongitude)
     return{ vertexBuffer, indexBuffer };
 }
 
+ObjGeometry loadObj(tinyobj::attrib_t attrib, std::vector<tinyobj::shape_t> shapes)
+{
+//    unsigned long nb_vertices = attrib.vertices.size() / 3;
+//    std::vector<Vertex3f3f2f> vertexBuffer(nb_vertices);
+    std::vector<Vertex3f3f2f> vertexBuffer;
+    std::vector<std::vector<int32_t>> indexBuffers;
+    std::vector<uint32_t> materialIndexes;
+
+    for(size_t s = 0; s < shapes.size(); ++s) {
+        std::vector<int32_t> indexBuffer;
+        for (size_t i = 0; i < shapes[s].mesh.indices.size(); ++i) {
+
+            tinyobj::index_t idx = shapes[s].mesh.indices[i];
+
+            Vertex3f3f2f v = {
+                    {
+                          attrib.vertices[idx.vertex_index * 3 + 0],
+                          attrib.vertices[idx.vertex_index * 3 + 1],
+                          attrib.vertices[idx.vertex_index * 3 + 2]
+                    },
+                    {
+                            attrib.normals[idx.normal_index * 3 + 0],
+                            attrib.normals[idx.normal_index * 3 + 1],
+                            attrib.normals[idx.normal_index * 3 + 2]
+                    },
+                    {
+                            attrib.texcoords[idx.texcoord_index * 2 + 0],
+                            1.f - attrib.texcoords[idx.texcoord_index * 2 + 1]
+                    }
+            };
+
+//            indexBuffer.push_back(idx.vertex_index);
+//            vertexBuffer[idx.vertex_index] = v;
+
+            indexBuffer.push_back(vertexBuffer.size());
+            vertexBuffer.push_back(v);
+        }
+        indexBuffers.push_back(indexBuffer);
+        materialIndexes.push_back(shapes[s].mesh.material_ids[0]);
+    }
+
+    return {vertexBuffer, indexBuffers, materialIndexes};
+}
 }
