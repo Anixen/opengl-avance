@@ -126,14 +126,14 @@ typedef struct {
 typedef struct {
   std::string name;
 
-  float ambient[3];
-  float diffuse[3];
-  float specular[3];
-  float transmittance[3];
-  float emission[3];
-  float shininess;
-  float ior;       // index of refraction
-  float dissolve;  // 1 == opaque; 0 == fully transparent
+  float ambient[3];         // Ka
+  float diffuse[3];         // Kd
+  float specular[3];        // Ks
+  float transmittance[3];   // Tf, Tr ?
+  float emission[3];        // Ke
+  float shininess;          // Ns
+  float ior;                // Ni - index of refraction
+  float dissolve;           // d - 1 == opaque; 0 == fully transparent
   // illumination model (see http://www.fileformat.info/format/material/)
   int illum;
 
