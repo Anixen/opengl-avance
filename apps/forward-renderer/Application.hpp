@@ -53,16 +53,14 @@ private:
     const GLint normalAttr_location = 1;
     const GLint texCoordsAttr_location = 2;
 
+    const GLint pointLightPosition_binding = 3;
+    const GLint pointLightColor_binding = 4;
+    const GLint pointLightIntensity_binding = 5;
+
+
     GLint m_uModelViewProjMatrix_location;
     GLint m_uModelViewMatrix_location;
     GLint m_uNormalMatrix_location;
-
-    GLint m_uDirectionalLightDir_location;
-    GLint m_uDirectionalLightColor_location;
-    GLint m_uDirectionalLightIntensity_location;
-    GLint m_uPointLightPosition_location;
-    GLint m_uPointLightColor_location;
-    GLint m_uPointLightIntensity_location;
 
     GLint m_uKa_location;
     GLuint m_KaSampler = 0;
@@ -92,6 +90,15 @@ private:
     GLuint m_objVBO;
     std::vector<GLuint> m_objIBOs;
     std::vector<GLuint> m_objVAOs;
+
+    GLint m_uDirectionalLightDir_location;
+    GLint m_uDirectionalLightColor_location;
+    GLint m_uDirectionalLightIntensity_location;
+
+    GLint m_uNbPointLights_location;
+    GLuint m_pointLightPositionSSBO;
+    GLuint m_pointLightColorSSBO;
+    GLuint m_pointLightIntensitySSBO;
 
     std::vector<int32_t> materialIndexes;
     std::map<std::string, GLuint> m_textures;

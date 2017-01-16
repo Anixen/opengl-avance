@@ -1,4 +1,4 @@
-#version 330
+#version 430
 
 in vec3 vViewSpacePosition; // Position du vertex dans View
 in vec3 vViewSpaceNormal; // Normale du vertex dans View
@@ -8,9 +8,21 @@ uniform vec3 uDirectionalLightDir;
 uniform vec3 uDirectionalLightColor;
 uniform float uDirectionalLightIntensity;
 
-uniform vec3 uPointLightPosition;
-uniform vec3 uPointLightColor;
-uniform float uPointLightIntensity;
+uniform int uNbPointLights;
+layout(std430, binding = 3) buffer aPointLightPosition
+{
+    vec4 PointLightPositions[];
+};
+
+layout(std430, binding = 4) buffer aPointLightColor
+{
+    vec4 PointLightColors[];
+};
+
+layout(std430, binding = 5) buffer aPointLightIntensity
+{
+    float PointLightIntensities[];
+};
 
 uniform vec3 uKa;
 uniform sampler2D uKaSampler;
@@ -77,9 +89,6 @@ void main()
         texeld = texture(udSampler, vTexCoords);
     }
 
-    float distToPointLight = length(uPointLightPosition - vViewSpacePosition);
-    vec3 dirToPointLight = (uPointLightPosition - vViewSpacePosition) / distToPointLight;
-
     vec3 Ka = uKa * texelKa.rgb;
     vec3 Kd = uKd * texelKd.rgb;
     vec3 Ks = uKs * texelKs.rgb;
@@ -93,10 +102,16 @@ void main()
             + uPointLightColor * uPointLightIntensity * max(0, dot(vViewSpaceNormal, dirToPointLight)) / (distToPointLight * distToPointLight));
     //*/
 
-    fColor = vec4(
-        blinnPhong(Ka, Kd, Ks, Ns, uPointLightColor, uPointLightIntensity, dirToPointLight, distToPointLight)
-      + blinnPhong(Ka, Kd, Ks, Ns, uDirectionalLightColor, uDirectionalLightIntensity, uDirectionalLightDir, 1),
-       1.f);
+    vec3 contribution = vec3(0, 0, 0);
+//    contribution += blinnPhong(Ka, Kd, Ks, Ns, uDirectionalLightColor, uDirectionalLightIntensity, uDirectionalLightDir, 1);
+
+    for(int i = 0; i < uNbPointLights; ++i) {
+        float distToPointLight = length(PointLightPositions[i].xyz - vViewSpacePosition);
+        vec3 dirToPointLight = (PointLightPositions[i].xyz - vViewSpacePosition) / distToPointLight;
+        contribution += blinnPhong(Ka, Kd, Ks, Ns, PointLightColors[i].rgb, PointLightIntensities[i], dirToPointLight, distToPointLight);
+    }
+
+    fColor = vec4(contribution, 1.f);
 
     //fColor = vec4(d, d, d, 1);
 
