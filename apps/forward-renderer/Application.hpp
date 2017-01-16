@@ -23,6 +23,9 @@ public:
 
     int run();
 private:
+
+    void loadTexture(std::string texName);
+
     const size_t m_nWindowWidth = 1280;
     const size_t m_nWindowHeight = 720;
     glmlv::GLFWHandle m_GLFWHandle{ m_nWindowWidth, m_nWindowHeight, "Template" }; // Note: the handle must be declared before the creation of any object managing OpenGL resource (e.g. GLProgram, GLShader)
@@ -43,7 +46,7 @@ private:
 
     std::vector<DrawObject> m_drawObjects;
 
-    std::string basedir = m_AssetsRootPath/ m_AppName / "models/crytek-sponza/";
+    std::string basedir = m_AssetsRootPath/ m_AppName / "models/crytek_sponza/";
     std::string inputfile = basedir + "sponza.obj";
 
     const GLint positionAttr_location = 0;
@@ -61,10 +64,30 @@ private:
     GLint m_uPointLightColor_location;
     GLint m_uPointLightIntensity_location;
 
+    GLint m_uKa_location;
+    GLuint m_KaSampler = 0;
+    GLint m_uKaSampler_location;
+    GLint m_uKaMap_location;
+
     GLint m_uKd_location;
-
+    GLuint m_KdSampler = 0;
     GLint m_uKdSampler_location;
+    GLint m_uKdMap_location;
 
+    GLint m_uKs_location;
+    GLuint m_KsSampler = 0;
+    GLint m_uKsSampler_location;
+    GLint m_uKsMap_location;
+
+    GLint m_uNs_location;
+    GLuint m_NsSampler = 0;
+    GLint m_uNsSampler_location;
+    GLint m_uNsMap_location;
+
+    GLint m_ud_location;
+    GLuint m_dSampler = 0;
+    GLint m_udSampler_location;
+    GLint m_udMap_location;
 
     GLuint m_objVBO;
     std::vector<GLuint> m_objIBOs;
@@ -73,7 +96,6 @@ private:
     std::vector<int32_t> materialIndexes;
     std::map<std::string, GLuint> m_textures;
 
-    GLuint m_textureSampler = 0;
 
     glmlv::GLProgram m_program;
 };
