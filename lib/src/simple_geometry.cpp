@@ -140,23 +140,38 @@ ObjGeometry loadObj(tinyobj::attrib_t attrib, std::vector<tinyobj::shape_t> shap
         for (size_t i = 0; i < shapes[s].mesh.indices.size(); ++i) {
 
             tinyobj::index_t idx = shapes[s].mesh.indices[i];
+            /*
+            printf("attrib.vertices.size =%d\nattrib.normals.size =%d\nattrib.texcoords.size =%d\n",
+                   attrib.vertices.size(), attrib.normals.size(), attrib.texcoords.size());
 
-            Vertex3f3f2f v = {
-                    {
-                          attrib.vertices[idx.vertex_index * 3 + 0],
-                          attrib.vertices[idx.vertex_index * 3 + 1],
-                          attrib.vertices[idx.vertex_index * 3 + 2]
-                    },
-                    {
-                            attrib.normals[idx.normal_index * 3 + 0],
-                            attrib.normals[idx.normal_index * 3 + 1],
-                            attrib.normals[idx.normal_index * 3 + 2]
-                    },
-                    {
-                            attrib.texcoords[idx.texcoord_index * 2 + 0],
-                            1.f - attrib.texcoords[idx.texcoord_index * 2 + 1]
-                    }
-            };
+            printf("idx.vertex_index =%d\nidx.normal_index =%d\nidx.texcoord_index=%d\n",
+                   idx.vertex_index, idx.normal_index, idx.texcoord_index);
+            //*/
+            glm::vec3 position(0.f, 0.f, 0.f);
+            glm::vec3 normal(0.f, 0.f, 0.f);
+            glm::vec2 texCoord(0.f, 0.f);
+
+            if(idx.vertex_index >= 0)
+                position = {
+                        attrib.vertices[idx.vertex_index * 3 + 0],
+                        attrib.vertices[idx.vertex_index * 3 + 1],
+                        attrib.vertices[idx.vertex_index * 3 + 2]
+                };
+
+            if(idx.normal_index >= 0)
+                normal = {
+                        attrib.normals[idx.normal_index * 3 + 0],
+                        attrib.normals[idx.normal_index * 3 + 1],
+                        attrib.normals[idx.normal_index * 3 + 2]
+                };
+
+            if(idx.texcoord_index >= 0)
+                texCoord = {
+                        attrib.texcoords[idx.texcoord_index * 2 + 0],
+                        1.f - attrib.texcoords[idx.texcoord_index * 2 + 1]
+                };
+
+            Vertex3f3f2f v = { position, normal, texCoord };
 
 //            indexBuffer.push_back(idx.vertex_index);
 //            vertexBuffer[idx.vertex_index] = v;
@@ -165,7 +180,7 @@ ObjGeometry loadObj(tinyobj::attrib_t attrib, std::vector<tinyobj::shape_t> shap
             vertexBuffer.push_back(v);
         }
         indexBuffers.push_back(indexBuffer);
-        materialIndexes.push_back(shapes[s].mesh.material_ids[0]);
+        materialIndexes.push_back(shapes[s].mesh.material_ids[shapes[s].mesh.material_ids.size() - 1]);
     }
 
     return {vertexBuffer, indexBuffers, materialIndexes};
