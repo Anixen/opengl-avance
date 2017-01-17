@@ -9,11 +9,13 @@
 
 #include <map>
 
-typedef struct {
-    GLuint vb;  // vertex buffer
-    int numTriangles;
-    size_t material_id;
-} DrawObject;
+
+struct PointLight {
+    glm::vec3 position;
+    glm::vec3 color;
+    float intensity;
+    bool enabled = true;
+};
 
 
 class Application
@@ -43,9 +45,6 @@ private:
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
 
-
-    std::vector<DrawObject> m_drawObjects;
-
     std::string basedir = m_AssetsRootPath/ m_AppName / "models/crytek_sponza/";
     std::string inputfile = basedir + "sponza.obj";
 
@@ -56,7 +55,7 @@ private:
     const GLint pointLightPosition_binding = 3;
     const GLint pointLightColor_binding = 4;
     const GLint pointLightIntensity_binding = 5;
-
+    const GLint pointLightEnabled_binding = 6;
 
     GLint m_uModelViewProjMatrix_location;
     GLint m_uModelViewMatrix_location;
@@ -95,10 +94,12 @@ private:
     GLint m_uDirectionalLightColor_location;
     GLint m_uDirectionalLightIntensity_location;
 
+    GLint m_uEnablePointLights_location;
     GLint m_uNbPointLights_location;
     GLuint m_pointLightPositionSSBO;
     GLuint m_pointLightColorSSBO;
     GLuint m_pointLightIntensitySSBO;
+    GLuint m_pointLightEnabledSSBO;
 
     std::vector<int32_t> materialIndexes;
     std::map<std::string, GLuint> m_textures;

@@ -7,6 +7,7 @@
 #include <glmlv/simple_geometry.hpp>
 #include <glmlv/Image2DRGBA.hpp>
 #include <tiny_obj_loader.h>
+#include <backward/strstream>
 //#include <tiny_obj_loader.h>
 
 
@@ -23,13 +24,13 @@ int Application::run()
     glm::vec3 directionalLightColor = {1, 1, 1};
     float directionalLightIntensity = 1.f;
 
-    int nb_pointLights = 3;
-    glm::vec4 pointLightPositions[3] = {{64, 8, 0, 1}, {0, 16, 0, 1}, {0, 8, 32, 1}};
-    glm::vec4 pointLightColors[3] = {{1, 0, 0, 1}, {0, 1, 0, 1}, {0, 0, 1, 1}};
-    float pointLightIntensities[3] = {1.f, 0.75f, 0.5f};
 
-    printf("sizeof(float) = %d\n", sizeof(float));
-    printf("sizeof(glm::vec4) = %d\n", sizeof(glm::vec4));
+    bool enablePointLights = true;
+    std::vector<PointLight> pointLights = {
+            {{64, 8, 0}, {1, 0, 0}, 100.f, true},
+            {{0, 16, 0}, {0, 1, 0}, 750.f, true},
+            {{0, 8, 32}, {0, 0, 1}, 500.f, true}
+    };
 
     // Loop until the user closes the window
     for (auto iterationCount = 0u; !m_GLFWHandle.shouldClose(); ++iterationCount)
@@ -51,18 +52,25 @@ int Application::run()
         glUniform3f(m_uDirectionalLightColor_location, directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
         glUniform1f(m_uDirectionalLightIntensity_location, directionalLightIntensity);
 
-        glUniform1i(m_uNbPointLights_location, nb_pointLights);
+        glUniform1i(m_uEnablePointLights_location, enablePointLights);
+        glUniform1i(m_uNbPointLights_location, pointLights.size());
         // Build and send SBOs
 
         std::vector<glm::vec4> pointLightsPositionsStorageBuffer;
         std::vector<glm::vec4> pointLightsColorsStorageBuffer;
         std::vector<float> pointLightsIntensitiesStorageBuffer;
+        std::vector<int> pointLightsEnabledStorageBuffer;
 
-        for(int l = 0; l < nb_pointLights; ++l) {
-            pointLightsPositionsStorageBuffer.push_back(viewMatrix * pointLightPositions[l]);
-            pointLightsColorsStorageBuffer.push_back(pointLightColors[l]);
-            pointLightsIntensitiesStorageBuffer.push_back(pointLightIntensities[l]);
+        for(int l = 0; l < pointLights.size(); ++l) {
+            PointLight &light = pointLights[l];
+
+            pointLightsPositionsStorageBuffer.push_back(viewMatrix * glm::vec4(light.position, 1.f));
+            pointLightsColorsStorageBuffer.push_back(glm::vec4(light.color, 1.f));
+            pointLightsIntensitiesStorageBuffer.push_back(light.intensity);
+            pointLightsEnabledStorageBuffer.push_back(light.enabled);
+            printf("pointLightsEnabledStorageBuffer[%d] = %d\n", l, pointLightsEnabledStorageBuffer[l]);
         }
+        printf("\n");
 
         GLvoid  *p;
 
@@ -75,9 +83,12 @@ int Application::run()
         glUnmapNamedBuffer(m_pointLightColorSSBO);
 
         p = glMapNamedBuffer(m_pointLightIntensitySSBO, GL_WRITE_ONLY);
-        memcpy(p, pointLightsIntensitiesStorageBuffer.data(), pointLightsIntensitiesStorageBuffer.size() * sizeof(glm::vec4));
+        memcpy(p, pointLightsIntensitiesStorageBuffer.data(), pointLightsIntensitiesStorageBuffer.size() * sizeof(float));
         glUnmapNamedBuffer(m_pointLightIntensitySSBO);
 
+        p = glMapNamedBuffer(m_pointLightEnabledSSBO, GL_WRITE_ONLY);
+        memcpy(p, pointLightsEnabledStorageBuffer.data(), pointLightsEnabledStorageBuffer.size() * sizeof(int));
+        glUnmapNamedBuffer(m_pointLightEnabledSSBO);
 
         // Display the model
         glUniform1i(m_uKaSampler_location,0); // Set the uniform to 0 because we use texture unit 0
@@ -179,12 +190,33 @@ int Application::run()
                 glClearColor(clearColor[0], clearColor[1], clearColor[2], 1.f);
             }
 
+            if(ImGui::DragFloat("cameraSpeed", &m_ViewControllerSpeed)) {
+                m_viewController.setSpeed(m_ViewControllerSpeed);
+            }
+
             ImGui::DragFloat3("directionalLightDir", &directionalLightDir[0]);
             ImGui::ColorEdit3("directionalLightColor", &directionalLightColor[0]);
             ImGui::DragFloat("directionalLightIntensity", &directionalLightIntensity);
 
-            if(ImGui::DragFloat("cameraSpeed", &m_ViewControllerSpeed)) {
-                m_viewController.setSpeed(m_ViewControllerSpeed);
+            ImGui::Checkbox("Enable point lights", &enablePointLights);
+            for(int l = 0; l < pointLights.size(); ++l) {
+
+                std::ostringstream prefix;
+                prefix << "PointLight_" << l;
+
+                ImGui::Text(prefix.str().c_str());
+
+                std::ostringstream positionLabel, colorLabel, intensityLabel, enableLabel;
+                positionLabel << prefix.str() << "_Position";
+                colorLabel << prefix.str() << "_Color";
+                intensityLabel << prefix.str() << "_Intensity";
+                enableLabel << prefix.str() << "_Enabled";
+
+                PointLight &light = pointLights[l];
+                ImGui::DragFloat3(positionLabel.str().c_str(), &(light.position[0]));
+                ImGui::ColorEdit3(colorLabel.str().c_str(), &(pointLights[l].color[0]));
+                ImGui::DragFloat(intensityLabel.str().c_str(), &(light.intensity));
+                ImGui::Checkbox(enableLabel.str().c_str(), &(light.enabled));
             }
 
             ImGui::End();
@@ -468,6 +500,7 @@ Application::Application(int argc, char** argv):
     m_uDirectionalLightColor_location = glGetUniformLocation(m_program.glId(), "uDirectionalLightColor");
     m_uDirectionalLightIntensity_location = glGetUniformLocation(m_program.glId(), "uDirectionalLightIntensity");
 
+    m_uEnablePointLights_location = glGetUniformLocation(m_program.glId(), "uEnablePointLights");
     m_uNbPointLights_location = glGetUniformLocation(m_program.glId(), "uNbPointLights");
 
     // Build and connect SSBOs
@@ -486,7 +519,7 @@ Application::Application(int argc, char** argv):
     glCreateBuffers(1, &m_pointLightColorSSBO);
     glNamedBufferData(m_pointLightColorSSBO, 1024, nullptr, GL_DYNAMIC_DRAW);
     block_index = glGetProgramResourceIndex(m_program.glId(), GL_SHADER_STORAGE_BLOCK, "aPointLightColor");
-    //glShaderStorageBlockBinding(m_program.glId(), block_index, pointLightPosition_binding);
+    //glShaderStorageBlockBinding(m_program.glId(), block_index, pointLightColor_binding);
     binding_point_index = 1;
     glShaderStorageBlockBinding(m_program.glId(), block_index, binding_point_index);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, m_pointLightColorSSBO);
@@ -495,10 +528,19 @@ Application::Application(int argc, char** argv):
     glCreateBuffers(1, &m_pointLightIntensitySSBO);
     glNamedBufferData(m_pointLightIntensitySSBO, 1024, nullptr, GL_DYNAMIC_DRAW);
     block_index = glGetProgramResourceIndex(m_program.glId(), GL_SHADER_STORAGE_BLOCK, "aPointLightIntensity");
-    //glShaderStorageBlockBinding(m_program.glId(), block_index, pointLightPosition_binding);
+    //glShaderStorageBlockBinding(m_program.glId(), block_index, pointLightIntensity_binding);
     binding_point_index = 2;
     glShaderStorageBlockBinding(m_program.glId(), block_index, binding_point_index);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, m_pointLightIntensitySSBO);
+    //glBindBufferRange(GL_SHADER_STORAGE_BUFFER, binding_point_index, m_pointLightColorSSBO, 0, 1024);
+
+    glCreateBuffers(1, &m_pointLightEnabledSSBO);
+    glNamedBufferData(m_pointLightEnabledSSBO, 1024, nullptr, GL_DYNAMIC_DRAW);
+    block_index = glGetProgramResourceIndex(m_program.glId(), GL_SHADER_STORAGE_BLOCK, "aPointLightEnabled");
+    //glShaderStorageBlockBinding(m_program.glId(), block_index, pointLightEnabled_binding);
+    binding_point_index = 3;
+    glShaderStorageBlockBinding(m_program.glId(), block_index, binding_point_index);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, m_pointLightEnabledSSBO);
     //glBindBufferRange(GL_SHADER_STORAGE_BUFFER, binding_point_index, m_pointLightColorSSBO, 0, 1024);
 }
 

@@ -8,6 +8,7 @@ uniform vec3 uDirectionalLightDir;
 uniform vec3 uDirectionalLightColor;
 uniform float uDirectionalLightIntensity;
 
+uniform bool uEnablePointLights;
 uniform int uNbPointLights;
 layout(std430, binding = 3) buffer aPointLightPosition
 {
@@ -22,6 +23,11 @@ layout(std430, binding = 4) buffer aPointLightColor
 layout(std430, binding = 5) buffer aPointLightIntensity
 {
     float PointLightIntensities[];
+};
+
+layout(std430, binding = 6) buffer aPointLightEnabled
+{
+    int PointLightEnableds[];
 };
 
 uniform vec3 uKa;
@@ -54,7 +60,7 @@ vec3 blinnPhong(vec3 Ka, vec3 Kd, vec3 Ks, float Ns, vec3 lightColor, float ligh
     vec3 w0 = normalize(-vViewSpacePosition);
     vec3 halfVector = normalize((wi + w0) / 2);
     vec3 N = normalize(vViewSpaceNormal);
-    vec3 Li = lightColor * lightIntensity / distance * distance;
+    vec3 Li = lightColor * lightIntensity / (distance * distance);
 
     // Li * [(Kd * (wi.N) + Ks * (halfVector.N) ^ shininess)]
 
@@ -103,13 +109,16 @@ void main()
     //*/
 
     vec3 contribution = vec3(0, 0, 0);
-//    contribution += blinnPhong(Ka, Kd, Ks, Ns, uDirectionalLightColor, uDirectionalLightIntensity, uDirectionalLightDir, 1);
+    contribution += blinnPhong(Ka, Kd, Ks, Ns, uDirectionalLightColor, uDirectionalLightIntensity, uDirectionalLightDir, 1);
 
-    for(int i = 0; i < uNbPointLights; ++i) {
-        float distToPointLight = length(PointLightPositions[i].xyz - vViewSpacePosition);
-        vec3 dirToPointLight = (PointLightPositions[i].xyz - vViewSpacePosition) / distToPointLight;
-        contribution += blinnPhong(Ka, Kd, Ks, Ns, PointLightColors[i].rgb, PointLightIntensities[i], dirToPointLight, distToPointLight);
-    }
+    if(uEnablePointLights)
+        for(int i = 0; i < uNbPointLights; ++i) {
+            if(0 == PointLightEnableds[i])
+                continue;
+            float distToPointLight = length(PointLightPositions[i].xyz - vViewSpacePosition);
+            vec3 dirToPointLight = (PointLightPositions[i].xyz - vViewSpacePosition) / distToPointLight;
+            contribution += blinnPhong(Ka, Kd, Ks, Ns, PointLightColors[i].rgb, PointLightIntensities[i], dirToPointLight, distToPointLight);
+        }
 
     fColor = vec4(contribution, 1.f);
 
