@@ -27,6 +27,7 @@ public:
 private:
 
     void loadTexture(std::string texName);
+    void updatePointLightSSBO(const std::vector<PointLight>& pointLights, const glm::mat4& viewMatrix);
 
     const size_t m_nWindowWidth = 1280;
     const size_t m_nWindowHeight = 720;

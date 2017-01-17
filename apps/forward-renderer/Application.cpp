@@ -20,10 +20,12 @@ int Application::run()
     float clearColor[3] = { 0.3, 0.3, 0.3 };
     glClearColor(clearColor[0], clearColor[1], clearColor[2], 1.f);
 
+    // Initalise lights
+    // TODO Might be moved to member variables
+
     glm::vec3 directionalLightDir = {1, 1, 2};
     glm::vec3 directionalLightColor = {1, 1, 1};
     float directionalLightIntensity = 1.f;
-
 
     bool enablePointLights = true;
     std::vector<PointLight> pointLights = {
@@ -54,39 +56,9 @@ int Application::run()
 
         glUniform1i(m_uEnablePointLights_location, enablePointLights);
         glUniform1i(m_uNbPointLights_location, pointLights.size());
-        // Build and send SBOs
 
-        std::vector<glm::vec4> pointLightsPositionsStorageBuffer;
-        std::vector<glm::vec4> pointLightsColorsStorageBuffer;
-        std::vector<float> pointLightsIntensitiesStorageBuffer;
-        std::vector<int> pointLightsEnabledStorageBuffer;
-
-        for(int l = 0; l < pointLights.size(); ++l) {
-            PointLight &light = pointLights[l];
-
-            pointLightsPositionsStorageBuffer.push_back(viewMatrix * glm::vec4(light.position, 1.f));
-            pointLightsColorsStorageBuffer.push_back(glm::vec4(light.color, 1.f));
-            pointLightsIntensitiesStorageBuffer.push_back(light.intensity);
-            pointLightsEnabledStorageBuffer.push_back(light.enabled);
-        }
-
-        GLvoid  *p;
-
-        p = glMapNamedBuffer(m_pointLightPositionSSBO, GL_WRITE_ONLY);
-        memcpy(p, pointLightsPositionsStorageBuffer.data(), pointLightsPositionsStorageBuffer.size() * sizeof(glm::vec4));
-        glUnmapNamedBuffer(m_pointLightPositionSSBO);
-
-        p = glMapNamedBuffer(m_pointLightColorSSBO, GL_WRITE_ONLY);
-        memcpy(p, pointLightsColorsStorageBuffer.data(), pointLightsColorsStorageBuffer.size() * sizeof(glm::vec4));
-        glUnmapNamedBuffer(m_pointLightColorSSBO);
-
-        p = glMapNamedBuffer(m_pointLightIntensitySSBO, GL_WRITE_ONLY);
-        memcpy(p, pointLightsIntensitiesStorageBuffer.data(), pointLightsIntensitiesStorageBuffer.size() * sizeof(float));
-        glUnmapNamedBuffer(m_pointLightIntensitySSBO);
-
-        p = glMapNamedBuffer(m_pointLightEnabledSSBO, GL_WRITE_ONLY);
-        memcpy(p, pointLightsEnabledStorageBuffer.data(), pointLightsEnabledStorageBuffer.size() * sizeof(int));
-        glUnmapNamedBuffer(m_pointLightEnabledSSBO);
+        // Build SSBO
+        updatePointLightSSBO(pointLights, viewMatrix);
 
         // Display the model
         glUniform1i(m_uKaSampler_location,0); // Set the uniform to 0 because we use texture unit 0
@@ -298,6 +270,42 @@ void Application::loadTexture(std::string texName)
             m_textures.insert(std::make_pair(texName, texture_id));
         }
     }
+}
+
+
+void Application::updatePointLightSSBO(const std::vector<PointLight>& pointLights, const glm::mat4& viewMatrix)
+{
+    std::vector<glm::vec4> pointLightsPositionsStorageBuffer;
+    std::vector<glm::vec4> pointLightsColorsStorageBuffer;
+    std::vector<float> pointLightsIntensitiesStorageBuffer;
+    std::vector<int> pointLightsEnabledStorageBuffer;
+
+    for(int l = 0; l < pointLights.size(); ++l) {
+        const PointLight &light = pointLights[l];
+
+        pointLightsPositionsStorageBuffer.push_back(viewMatrix * glm::vec4(light.position, 1.f));
+        pointLightsColorsStorageBuffer.push_back(glm::vec4(light.color, 1.f));
+        pointLightsIntensitiesStorageBuffer.push_back(light.intensity);
+        pointLightsEnabledStorageBuffer.push_back(light.enabled);
+    }
+
+    GLvoid  *p;
+
+    p = glMapNamedBuffer(m_pointLightPositionSSBO, GL_WRITE_ONLY);
+    memcpy(p, pointLightsPositionsStorageBuffer.data(), pointLightsPositionsStorageBuffer.size() * sizeof(glm::vec4));
+    glUnmapNamedBuffer(m_pointLightPositionSSBO);
+
+    p = glMapNamedBuffer(m_pointLightColorSSBO, GL_WRITE_ONLY);
+    memcpy(p, pointLightsColorsStorageBuffer.data(), pointLightsColorsStorageBuffer.size() * sizeof(glm::vec4));
+    glUnmapNamedBuffer(m_pointLightColorSSBO);
+
+    p = glMapNamedBuffer(m_pointLightIntensitySSBO, GL_WRITE_ONLY);
+    memcpy(p, pointLightsIntensitiesStorageBuffer.data(), pointLightsIntensitiesStorageBuffer.size() * sizeof(float));
+    glUnmapNamedBuffer(m_pointLightIntensitySSBO);
+
+    p = glMapNamedBuffer(m_pointLightEnabledSSBO, GL_WRITE_ONLY);
+    memcpy(p, pointLightsEnabledStorageBuffer.data(), pointLightsEnabledStorageBuffer.size() * sizeof(int));
+    glUnmapNamedBuffer(m_pointLightEnabledSSBO);
 }
 
 Application::Application(int argc, char** argv):
