@@ -2,6 +2,7 @@
 
 in vec3 vViewSpacePosition; // Position du vertex dans View
 in vec3 vViewSpaceNormal; // Normale du vertex dans View
+in vec3 vViewSpaceTangent; // Tangente du vertex dans View
 in vec2 vTexCoords; // Coordonnées de texture
 
 uniform vec3 uDirectionalLightDir;
@@ -10,22 +11,22 @@ uniform float uDirectionalLightIntensity;
 
 uniform bool uEnablePointLights;
 uniform int uNbPointLights;
-layout(std430, binding = 3) buffer aPointLightPosition
+layout(std430, binding = 4) buffer aPointLightPosition
 {
     vec4 PointLightPositions[];
 };
 
-layout(std430, binding = 4) buffer aPointLightColor
+layout(std430, binding = 5) buffer aPointLightColor
 {
     vec4 PointLightColors[];
 };
 
-layout(std430, binding = 5) buffer aPointLightIntensity
+layout(std430, binding = 6) buffer aPointLightIntensity
 {
     float PointLightIntensities[];
 };
 
-layout(std430, binding = 6) buffer aPointLightEnabled
+layout(std430, binding = 7) buffer aPointLightEnabled
 {
     int PointLightEnableds[];
 };
@@ -50,16 +51,31 @@ uniform float ud;
 uniform sampler2D udSampler;
 uniform bool udMap;
 
+uniform sampler2D uNormalSampler;
+uniform bool uNormalMap;
+vec3 normal;
 
 out vec4 fColor;
 
+vec3 bumpedNormal(vec4 normalTexel)
+{
+    vec3 normal = normalize(vViewSpaceNormal);
+    vec3 tangent = normalize(vViewSpaceTangent);
+    tangent = normalize(tangent - dot(tangent, normal) * normal);
+    vec3 bitangent = cross(tangent, normal);
+
+    vec3 bumpMapNormal = 2.0 * normalTexel.rgb - vec3(1.0, 1.0, 1.0);
+    mat3 TBN = mat3(tangent, bitangent, normal);
+
+    return normalize(TBN * bumpMapNormal);
+}
 
 vec3 blinnPhong(vec3 Ka, vec3 Kd, vec3 Ks, float Ns, vec3 lightColor, float lightIntensity, vec3 lightDirection, float distance) {
 
     vec3 wi = normalize(lightDirection);
     vec3 w0 = normalize(-vViewSpacePosition);
     vec3 halfVector = normalize((wi + w0) / 2);
-    vec3 N = normalize(vViewSpaceNormal);
+    vec3 N = normalize(normal);
     vec3 Li = lightColor * lightIntensity / (distance * distance);
 
     // Li * [(Kd * (wi.N) + Ks * (halfVector.N) ^ shininess)]
@@ -95,11 +111,19 @@ void main()
         texeld = texture(udSampler, vTexCoords);
     }
 
+    vec4 texelNormal = vec4(1.f, 1.f, 1.f, 1.f);
+    normal = vViewSpaceNormal;
+    if( uNormalMap) {
+        texelNormal = texture(uNormalSampler, vTexCoords);
+        normal = bumpedNormal(texelNormal);
+    }
+
     vec3 Ka = uKa * texelKa.rgb;
     vec3 Kd = uKd * texelKd.rgb;
     vec3 Ks = uKs * texelKs.rgb;
     float Ns = uNs * texelNs.r;
     float d = ud * texeld.r;
+
 
     /*
     // Diffuse
@@ -120,10 +144,13 @@ void main()
             contribution += blinnPhong(Ka, Kd, Ks, Ns, PointLightColors[i].rgb, PointLightIntensities[i], dirToPointLight, distToPointLight);
         }
 
+
     fColor = vec4(contribution, 1.f);
 
     //fColor = vec4(d, d, d, 1);
-
-    //fColor = Ks.rgb;
-    //fColor = vViewSpaceNormal;
+    //fColor = Ks.rgba;
+    //fColor = vec4(normalize(vViewSpaceTangent), 1.f);
+    //fColor = vec4(normalize(vViewSpaceNormal), 1.f);
+    //fColor = texelNormal.rgba;
+    //fColor = vec4(normal, 1.f);
 }

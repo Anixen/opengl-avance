@@ -1,10 +1,7 @@
-#define TINYOBJLOADER_IMPLEMENTATION // define this in only *one* .cc
-#include "tiny_obj_loader.h"
-
 #include <glmlv/simple_geometry.hpp>
 #include <glm/gtc/constants.hpp>
 #include <iostream>
-#include <tiny_obj_loader.h>
+
 
 namespace glmlv
 {
@@ -125,64 +122,5 @@ SimpleGeometry makeSphere(uint32_t subdivLongitude)
     }
 
     return{ vertexBuffer, indexBuffer };
-}
-
-ObjGeometry loadObj(tinyobj::attrib_t attrib, std::vector<tinyobj::shape_t> shapes)
-{
-//    unsigned long nb_vertices = attrib.vertices.size() / 3;
-//    std::vector<Vertex3f3f2f> vertexBuffer(nb_vertices);
-    std::vector<Vertex3f3f2f> vertexBuffer;
-    std::vector<std::vector<int32_t>> indexBuffers;
-    std::vector<uint32_t> materialIndexes;
-
-    for(size_t s = 0; s < shapes.size(); ++s) {
-        std::vector<int32_t> indexBuffer;
-        for (size_t i = 0; i < shapes[s].mesh.indices.size(); ++i) {
-
-            tinyobj::index_t idx = shapes[s].mesh.indices[i];
-            /*
-            printf("attrib.vertices.size =%d\nattrib.normals.size =%d\nattrib.texcoords.size =%d\n",
-                   attrib.vertices.size(), attrib.normals.size(), attrib.texcoords.size());
-
-            printf("idx.vertex_index =%d\nidx.normal_index =%d\nidx.texcoord_index=%d\n",
-                   idx.vertex_index, idx.normal_index, idx.texcoord_index);
-            //*/
-            glm::vec3 position(0.f, 0.f, 0.f);
-            glm::vec3 normal(0.f, 0.f, 0.f);
-            glm::vec2 texCoord(0.f, 0.f);
-
-            if(idx.vertex_index >= 0)
-                position = {
-                        attrib.vertices[idx.vertex_index * 3 + 0],
-                        attrib.vertices[idx.vertex_index * 3 + 1],
-                        attrib.vertices[idx.vertex_index * 3 + 2]
-                };
-
-            if(idx.normal_index >= 0)
-                normal = {
-                        attrib.normals[idx.normal_index * 3 + 0],
-                        attrib.normals[idx.normal_index * 3 + 1],
-                        attrib.normals[idx.normal_index * 3 + 2]
-                };
-
-            if(idx.texcoord_index >= 0)
-                texCoord = {
-                        attrib.texcoords[idx.texcoord_index * 2 + 0],
-                        1.f - attrib.texcoords[idx.texcoord_index * 2 + 1]
-                };
-
-            Vertex3f3f2f v = { position, normal, texCoord };
-
-//            indexBuffer.push_back(idx.vertex_index);
-//            vertexBuffer[idx.vertex_index] = v;
-
-            indexBuffer.push_back(vertexBuffer.size());
-            vertexBuffer.push_back(v);
-        }
-        indexBuffers.push_back(indexBuffer);
-        materialIndexes.push_back(shapes[s].mesh.material_ids[shapes[s].mesh.material_ids.size() - 1]);
-    }
-
-    return {vertexBuffer, indexBuffers, materialIndexes};
 }
 }

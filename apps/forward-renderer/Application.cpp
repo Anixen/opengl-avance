@@ -4,13 +4,11 @@
 
 #include <imgui.h>
 #include <glmlv/imgui_impl_glfw_gl3.hpp>
-#include <glmlv/simple_geometry.hpp>
+#include <glmlv/obj_geometry.hpp>
 #include <glmlv/Image2DRGBA.hpp>
+#include <strstream>
 #include <tiny_obj_loader.h>
-#include <backward/strstream>
 //#include <tiny_obj_loader.h>
-
-
 
 using namespace glmlv;
 
@@ -76,6 +74,9 @@ int Application::run()
         glUniform1i(m_udSampler_location, 4); // Set the uniform to 4 because we use texture unit 4
         glBindSampler(4, m_dSampler); // Tell to OpenGL what sampler we want to use on this texture unit
 
+        glUniform1i(m_uNormalSampler_location, 5); // Set the uniform to 4 because we use texture unit 5
+        glBindSampler(5, m_NormalSampler); // Tell to OpenGL what sampler we want to use on this texture unit
+
         for(size_t s = 0; s < m_objVAOs.size(); ++s) {
 
             glBindVertexArray(m_objVAOs[s]);
@@ -102,6 +103,9 @@ int Application::run()
             float d = materials[matIndex].dissolve;
             std::string dTexname = materials[matIndex].alpha_texname;
             bool dMap = !(dTexname == "");
+
+            std::string NormalTexname = materials[matIndex].bump_texname;
+            bool NormalMap = !(NormalTexname == "");
 
             glm::mat4 modelMatrix = glm::mat4();
             modelMatrix = glm::translate(modelMatrix, glm::vec3(0, 0, -5));
@@ -144,6 +148,11 @@ int Application::run()
             glUniform1f(m_ud_location, d);
             if(dMap)
                 glBindTextureUnit(4, m_textures[dTexname]);
+
+//            glActiveTexture(GL_TEXTURE5);
+            glUniform1i(m_uNormalMap_location, NormalMap);
+            if(NormalMap)
+                glBindTextureUnit(5, m_textures[NormalTexname]);
 
             glDrawElements(GL_TRIANGLES, shapes[s].mesh.indices.size(), GL_UNSIGNED_INT, nullptr);
             glBindVertexArray(0);
@@ -336,7 +345,7 @@ Application::Application(int argc, char** argv):
     }
 
     // Display file contents
-    /*
+
     printf("# of vertices  = %d\n", (int)(attrib.vertices.size()) / 3);
     printf("# of normals   = %d\n", (int)(attrib.normals.size()) / 3);
     printf("# of texcoords = %d\n", (int)(attrib.texcoords.size()) / 2);
@@ -377,7 +386,7 @@ Application::Application(int argc, char** argv):
     }
 
     printf("# of indexes    = %d\n", nb_indexes);
-
+    /*
     for (size_t i = 0; i < materials.size(); i++) {
         printf("material[%ld].name = %s\n", i, materials[i].name.c_str());
         printf("  material.Ka = (%f, %f ,%f)\n", materials[i].ambient[0], materials[i].ambient[1], materials[i].ambient[2]);
@@ -413,6 +422,7 @@ Application::Application(int argc, char** argv):
             loadTexture(mp->specular_texname);
             loadTexture(mp->specular_highlight_texname);
             loadTexture(mp->alpha_texname);
+            loadTexture(mp->bump_texname);
         }
     }
 
@@ -437,12 +447,15 @@ Application::Application(int argc, char** argv):
     glSamplerParameteri(m_dSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glSamplerParameteri(m_dSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+    glCreateSamplers(1, &m_NormalSampler);
+    glSamplerParameteri(m_NormalSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glSamplerParameteri(m_NormalSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // Load geometry and build buffers
     ObjGeometry obj = loadObj(attrib, shapes);
 
     glCreateBuffers(1, &m_objVBO);
-    glNamedBufferStorage(m_objVBO, obj.vertexBuffer.size() * sizeof(Vertex3f3f2f), obj.vertexBuffer.data(), 0);
+    glNamedBufferStorage(m_objVBO, obj.vertexBuffer.size() * sizeof(Vertex3f3f3f2f), obj.vertexBuffer.data(), 0);
 
     for(size_t s = 0; s < shapes.size(); ++s) {
 
@@ -458,19 +471,23 @@ Application::Application(int argc, char** argv):
         GLuint VAO;
         glCreateVertexArrays(1, &VAO);
 
-        glVertexArrayVertexBuffer(VAO, vboBindingIndex, m_objVBO, 0, sizeof(Vertex3f3f2f));
+        glVertexArrayVertexBuffer(VAO, vboBindingIndex, m_objVBO, 0, sizeof(Vertex3f3f3f2f));
 
         glVertexArrayAttribBinding(VAO, positionAttr_location, vboBindingIndex);
         glEnableVertexArrayAttrib(VAO, positionAttr_location);
-        glVertexArrayAttribFormat(VAO, positionAttr_location, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex3f3f2f, position));
+        glVertexArrayAttribFormat(VAO, positionAttr_location, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex3f3f3f2f, position));
 
         glVertexArrayAttribBinding(VAO, normalAttr_location, vboBindingIndex);
         glEnableVertexArrayAttrib(VAO, normalAttr_location);
-        glVertexArrayAttribFormat(VAO, normalAttr_location, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex3f3f2f, normal));
+        glVertexArrayAttribFormat(VAO, normalAttr_location, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex3f3f3f2f, normal));
+
+        glVertexArrayAttribBinding(VAO, tangentAttr_location, vboBindingIndex);
+        glEnableVertexArrayAttrib(VAO, tangentAttr_location);
+        glVertexArrayAttribFormat(VAO, tangentAttr_location, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex3f3f3f2f, tangent));
 
         glVertexArrayAttribBinding(VAO, texCoordsAttr_location, vboBindingIndex);
         glEnableVertexArrayAttrib(VAO, texCoordsAttr_location);
-        glVertexArrayAttribFormat(VAO, texCoordsAttr_location, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex3f3f2f, texCoords));
+        glVertexArrayAttribFormat(VAO, texCoordsAttr_location, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex3f3f3f2f, texCoords));
 
         glVertexArrayElementBuffer(VAO, IBO);
         m_objVAOs.push_back(VAO);
@@ -480,8 +497,8 @@ Application::Application(int argc, char** argv):
     }
 
     glEnable(GL_DEPTH_TEST);
-    glEnable (GL_BLEND);
-    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//    glEnable (GL_BLEND);
+//    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 
     // Here we load and compile shaders from the library
@@ -513,6 +530,9 @@ Application::Application(int argc, char** argv):
     m_ud_location = glGetUniformLocation(m_program.glId(), "ud");
     m_udSampler_location = glGetUniformLocation(m_program.glId(), "udSampler");
     m_udMap_location = glGetUniformLocation(m_program.glId(), "udMap");
+
+    m_uNormalSampler_location = glGetUniformLocation(m_program.glId(), "uNormalSampler");
+    m_uNormalMap_location = glGetUniformLocation(m_program.glId(), "uNormalMap");
 
     m_uDirectionalLightDir_location = glGetUniformLocation(m_program.glId(), "uDirectionalLightDir");
     m_uDirectionalLightColor_location = glGetUniformLocation(m_program.glId(), "uDirectionalLightColor");

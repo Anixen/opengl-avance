@@ -47,17 +47,18 @@ private:
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
 
-    std::string basedir = m_AssetsRootPath/ m_AppName / "models/crytek-sponza/";
-    std::string inputfile = basedir + "sponza.obj";
+    std::string basedir = m_AssetsRootPath/ m_AppName / "models/nanosuit/";
+    std::string inputfile = basedir + "nanosuit.obj";
 
     const GLint positionAttr_location = 0;
     const GLint normalAttr_location = 1;
-    const GLint texCoordsAttr_location = 2;
+    const GLint tangentAttr_location = 2;
+    const GLint texCoordsAttr_location = 3;
 
-    const GLint pointLightPosition_binding = 3;
-    const GLint pointLightColor_binding = 4;
-    const GLint pointLightIntensity_binding = 5;
-    const GLint pointLightEnabled_binding = 6;
+    const GLint pointLightPosition_binding = 4;
+    const GLint pointLightColor_binding = 5;
+    const GLint pointLightIntensity_binding = 6;
+    const GLint pointLightEnabled_binding = 7;
 
     GLint m_uModelViewProjMatrix_location;
     GLint m_uModelViewMatrix_location;
@@ -87,6 +88,10 @@ private:
     GLuint m_dSampler = 0;
     GLint m_udSampler_location;
     GLint m_udMap_location;
+
+    GLuint m_NormalSampler = 0;
+    GLint m_uNormalSampler_location;
+    GLint m_uNormalMap_location;
 
     GLuint m_objVBO;
     std::vector<GLuint> m_objIBOs;
