@@ -68,9 +68,7 @@ int Application::run()
             pointLightsColorsStorageBuffer.push_back(glm::vec4(light.color, 1.f));
             pointLightsIntensitiesStorageBuffer.push_back(light.intensity);
             pointLightsEnabledStorageBuffer.push_back(light.enabled);
-            printf("pointLightsEnabledStorageBuffer[%d] = %d\n", l, pointLightsEnabledStorageBuffer[l]);
         }
-        printf("\n");
 
         GLvoid  *p;
 
@@ -190,8 +188,12 @@ int Application::run()
                 glClearColor(clearColor[0], clearColor[1], clearColor[2], 1.f);
             }
 
-            if(ImGui::DragFloat("cameraSpeed", &m_ViewControllerSpeed)) {
+            if(ImGui::DragFloat("cameraSpeed", &m_ViewControllerSpeed, 1.f, 0.1f, 100000.f, "%.3f", 1.4f)) {
                 m_viewController.setSpeed(m_ViewControllerSpeed);
+            }
+
+            if(ImGui::SliderFloat("cameraRotationSpeed", &m_ViewControllerRotationSpeed, 0.001f, 0.1f)) {
+                m_viewController.setRotationSpeed(m_ViewControllerRotationSpeed);
             }
 
             ImGui::DragFloat3("directionalLightDir", &directionalLightDir[0]);

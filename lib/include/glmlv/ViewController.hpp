@@ -15,6 +15,10 @@ public:
         m_pWindow(window), m_fSpeed(speed) {
     }
 
+    ViewController(GLFWwindow* window, float speed = 1.f, float rotationSpeed = 0.1f) :
+            m_pWindow(window), m_fSpeed(speed), m_fRotationSpeed(rotationSpeed) {
+    }
+
     void setSpeed(float speed) {
         m_fSpeed = speed;
     }
@@ -30,6 +34,19 @@ public:
 
     float getCameraSpeed() const {
         return m_fSpeed;
+    }
+
+    void setRotationSpeed(float rotationSpeed) {
+        m_fRotationSpeed = rotationSpeed;
+    }
+
+    float getRotationSpeed() const {
+        return m_fRotationSpeed;
+    }
+
+    void increaseRotationSpeed(float delta) {
+        m_fRotationSpeed += delta;
+        m_fRotationSpeed = glm::max(m_fRotationSpeed, 0.f);
     }
 
     bool update(float elapsedTime);
@@ -50,6 +67,7 @@ public:
 private:
     GLFWwindow* m_pWindow = nullptr;
     float m_fSpeed = 0.f;
+    float m_fRotationSpeed = 0.01f;
     bool m_LeftButtonPressed = false;
     glm::dvec2 m_LastCursorPosition;
 

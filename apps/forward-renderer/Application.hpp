@@ -33,7 +33,8 @@ private:
     glmlv::GLFWHandle m_GLFWHandle{ m_nWindowWidth, m_nWindowHeight, "Template" }; // Note: the handle must be declared before the creation of any object managing OpenGL resource (e.g. GLProgram, GLShader)
 
     float m_ViewControllerSpeed = 100.f;
-    glmlv::ViewController m_viewController{m_GLFWHandle.window(), m_ViewControllerSpeed};
+    float m_ViewControllerRotationSpeed = 0.01f;
+    glmlv::ViewController m_viewController{m_GLFWHandle.window(), m_ViewControllerSpeed, m_ViewControllerRotationSpeed};
 
     const glmlv::fs::path m_AppPath;
     const std::string m_AppName;

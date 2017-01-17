@@ -29,11 +29,11 @@ bool ViewController::update(float elapsedTime)
     }
 
     if (glfwGetKey(m_pWindow, GLFW_KEY_Q)) {
-        lateralAngleDelta += 0.01f;
+        lateralAngleDelta += m_fRotationSpeed;
     }
 
     if (glfwGetKey(m_pWindow, GLFW_KEY_E)) {
-        lateralAngleDelta -= 0.01f;
+        lateralAngleDelta -= m_fRotationSpeed;
     }
 
     if (glfwGetKey(m_pWindow, GLFW_KEY_S)) {
