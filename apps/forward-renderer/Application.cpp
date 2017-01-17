@@ -142,7 +142,7 @@ int Application::run()
 //            glActiveTexture(GL_TEXTURE4);
             glUniform1i(m_udMap_location, dMap);
             glUniform1f(m_ud_location, d);
-            if(nsMap)
+            if(dMap)
                 glBindTextureUnit(4, m_textures[dTexname]);
 
             glDrawElements(GL_TRIANGLES, shapes[s].mesh.indices.size(), GL_UNSIGNED_INT, nullptr);
