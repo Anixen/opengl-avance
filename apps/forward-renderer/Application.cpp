@@ -181,7 +181,7 @@ int Application::run()
         ImGui_ImplGlfwGL3_NewFrame();
 
         {
-            ImGui::Begin("GUI");
+            ImGui::Begin("GUI_General");
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::ColorEditMode(ImGuiColorEditMode_RGB);
             if (ImGui::ColorEdit3("clearColor", clearColor)) {
@@ -196,6 +196,14 @@ int Application::run()
                 m_viewController.setRotationSpeed(m_ViewControllerRotationSpeed);
             }
 
+            ImGui::End();
+        }
+
+        {
+            ImGui::Begin("GUI_Lights");
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::ColorEditMode(ImGuiColorEditMode_RGB);
+
             ImGui::DragFloat3("directionalLightDir", &directionalLightDir[0]);
             ImGui::ColorEdit3("directionalLightColor", &directionalLightColor[0]);
             ImGui::DragFloat("directionalLightIntensity", &directionalLightIntensity);
@@ -203,11 +211,11 @@ int Application::run()
             ImGui::Checkbox("Enable point lights", &enablePointLights);
             for(int l = 0; l < pointLights.size(); ++l) {
 
+                // TODO Check impact performance of ostringstream
+                ImGui::Text("PointLight_%d", l);
+
                 std::ostringstream prefix;
                 prefix << "PointLight_" << l;
-
-                ImGui::Text(prefix.str().c_str());
-
                 std::ostringstream positionLabel, colorLabel, intensityLabel, enableLabel;
                 positionLabel << prefix.str() << "_Position";
                 colorLabel << prefix.str() << "_Color";
