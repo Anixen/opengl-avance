@@ -47,7 +47,7 @@ private:
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
 
-    std::string basedir = m_AssetsRootPath/ m_AppName / "models/crytek_sponza/";
+    std::string basedir = m_AssetsRootPath/ m_AppName / "models/crytek-sponza/";
     std::string inputfile = basedir + "sponza.obj";
 
     const GLint positionAttr_location = 0;
