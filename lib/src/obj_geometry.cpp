@@ -1,4 +1,3 @@
-#define TINYOBJLOADER_IMPLEMENTATION // define this in only *one* .cc
 #include "tiny_obj_loader.h"
 
 #include <glmlv/obj_geometry.hpp>
@@ -19,6 +18,9 @@ namespace glmlv {
         for(size_t s = 0; s < shapes.size(); ++s) {
             std::vector<int32_t> indexBuffer;
             std::vector<Vertex3f3f3f2f> vertices;
+
+            std::map<uint32_t, std::vector<int32_t >> mvp;
+
             for (size_t i = 0; i < shapes[s].mesh.indices.size(); ++i) {
 
                 tinyobj::index_t idx = shapes[s].mesh.indices[i];
@@ -57,6 +59,11 @@ namespace glmlv {
                             1.f - attrib.texcoords[idx.texcoord_index * 2 + 1]
                     };
 
+                if(mvp.find(idx.vertex_index) == mvp.end()) {
+                    mvp.insert(std::make_pair(idx.vertex_index, std::vector<int32_t>()));
+                }
+                mvp[idx.vertex_index].push_back(vertices.size());
+
                 vertex = { position, normal, tangent, texCoord };
                 vertices.push_back(vertex);
 
@@ -70,20 +77,18 @@ namespace glmlv {
             // Calculate vertices tangents
             // For each triangle/face
             for (size_t i = 0; i < vertices.size(); i += 3) {
-                Vertex3f3f3f2f& v0 = vertices[i];
-                Vertex3f3f3f2f& v1 = vertices[i + 1];
-                Vertex3f3f3f2f& v2 = vertices[i + 2];
+
+                tinyobj::index_t idx0 = shapes[s].mesh.indices[i];
+                tinyobj::index_t idx1 = shapes[s].mesh.indices[i + 1];
+                tinyobj::index_t idx2 = shapes[s].mesh.indices[i + 2];
+
+                Vertex3f3f3f2f& v0 = vertices[mvp[idx0.vertex_index][0]];
+                Vertex3f3f3f2f& v1 = vertices[mvp[idx1.vertex_index][0]];
+                Vertex3f3f3f2f& v2 = vertices[mvp[idx2.vertex_index][0]];
 
                 // Edges
                 glm::vec3 e1 = v1.position - v0.position;
                 glm::vec3 e2 = v2.position - v0.position;
-
-                float deltaU1 = v1.texCoords.x - v0.texCoords.x;
-                float deltaV1 = v1.texCoords.y - v0.texCoords.y;
-                float deltaU2 = v2.texCoords.x - v0.texCoords.x;
-                float deltaV2 = v2.texCoords.y - v0.texCoords.y;
-
-                float f = 1.0f / (deltaU1 * deltaV2 - deltaU2 * deltaV1);
 
                 glm::vec2 deltaUV1 = v1.texCoords - v0.texCoords;
                 glm::vec2 deltaUV2 = v2.texCoords - v0.texCoords;
@@ -95,10 +100,18 @@ namespace glmlv {
                 if(tangent.x < 0) tangent.x = - tangent.x;
 //                if(bitangent.y < 0) bitangent.y = - bitangent.y;
 
+                for(size_t v = 0; v < mvp[idx0.vertex_index].size(); ++v)
+                    vertices[mvp[idx0.vertex_index][v]].tangent += tangent;
 
-                v0.tangent += tangent;
-                v1.tangent += tangent;
-                v2.tangent += tangent;
+                for(size_t v = 0; v < mvp[idx1.vertex_index].size(); ++v)
+                    vertices[mvp[idx1.vertex_index][v]].tangent += tangent;
+
+                for(size_t v = 0; v < mvp[idx2.vertex_index].size(); ++v)
+                    vertices[mvp[idx2.vertex_index][v]].tangent += tangent;
+
+//                v0.tangent += tangent;
+//                v1.tangent += tangent;
+//                v2.tangent += tangent;
 
                 // Smoothed tangents
 //                v0.tangent += glm::normalize(glm::cross(bitangent, v0.normal));

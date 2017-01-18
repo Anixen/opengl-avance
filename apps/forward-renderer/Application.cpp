@@ -345,7 +345,7 @@ Application::Application(int argc, char** argv):
     }
 
     // Display file contents
-
+    /*
     printf("# of vertices  = %d\n", (int)(attrib.vertices.size()) / 3);
     printf("# of normals   = %d\n", (int)(attrib.normals.size()) / 3);
     printf("# of texcoords = %d\n", (int)(attrib.texcoords.size()) / 2);
