@@ -622,7 +622,7 @@ Application::Application(int argc, char** argv):
     GLenum drawBuffers[] =
             { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2,
               GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4};
-    glNamedFramebufferDrawBuffers(m_FBO, 6, drawBuffers);
+    glNamedFramebufferDrawBuffers(m_FBO, 5, drawBuffers);
 
     GLenum frameBufferStatus = glCheckNamedFramebufferStatus(m_FBO, GL_DRAW_FRAMEBUFFER);
     switch (frameBufferStatus) {
