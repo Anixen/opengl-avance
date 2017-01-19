@@ -37,86 +37,28 @@ int Application::run()
     {
         const auto seconds = glfwGetTime();
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         // Put here rendering code
 
-        glm::mat4 viewMatrix = m_viewController.getViewMatrix();
-        glm::mat4 projMatrix = glm::perspective(70.f, (float) m_nWindowWidth / m_nWindowHeight, 0.1f, 10000.f);
 
-        // Lighting
-        glm::vec4 viewDirectionalLightDir = viewMatrix * glm::vec4(directionalLightDir[0], directionalLightDir[1], directionalLightDir[2], 0);
-        viewDirectionalLightDir = glm::normalize(viewDirectionalLightDir);
 
-        glUniform3f(m_uDirectionalLightDir_location, viewDirectionalLightDir[0], viewDirectionalLightDir[1], viewDirectionalLightDir[2]);
-        glUniform3f(m_uDirectionalLightColor_location, directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
-        glUniform1f(m_uDirectionalLightIntensity_location, directionalLightIntensity);
-
-        glUniform1i(m_uEnablePointLights_location, enablePointLights);
-        glUniform1i(m_uNbPointLights_location, pointLights.size());
-
-        // Build SSBO
-        //updatePointLightSSBO(pointLights, viewMatrix);
-
-        // TODO Move these to initialization ?
-        glUniform1i(m_uKaSampler_location,0); // Set the uniform to 0 because we use texture unit 0
-        glBindSampler(0, m_KaSampler); // Tell to OpenGL what sampler we want to use on this texture unit
-
-        glUniform1i(m_uKdSampler_location, 1); // Set the uniform to 1 because we use texture unit 1
-        glBindSampler(1, m_KdSampler); // Tell to OpenGL what sampler we want to use on this texture unit
-
-        glUniform1i(m_uKsSampler_location, 2); // Set the uniform to 2 because we use texture unit 2
-        glBindSampler(2, m_KsSampler); // Tell to OpenGL what sampler we want to use on this texture unit
-
-        glUniform1i(m_uNsSampler_location, 3); // Set the uniform to 3 because we use texture unit 3
-        glBindSampler(3, m_NsSampler); // Tell to OpenGL what sampler we want to use on this texture unit
-
-        glUniform1i(m_udSampler_location, 4); // Set the uniform to 4 because we use texture unit 4
-        glBindSampler(4, m_dSampler); // Tell to OpenGL what sampler we want to use on this texture unit
-
-        glUniform1i(m_uNormalSampler_location, 5); // Set the uniform to 4 because we use texture unit 5
-        glBindSampler(5, m_NormalSampler); // Tell to OpenGL what sampler we want to use on this texture unit
 
         // Geometry Pass
-        m_geometryProgram.use();
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_FBO);
+        {
+            m_geometryProgram.use();
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_FBO);
 
-        // Display the model
-        for(size_t s = 0; s < m_objVAOs.size(); ++s) {
+            glViewport(0, 0, m_nWindowWidth, m_nWindowHeight);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            glBindVertexArray(m_objVAOs[s]);
+            glm::mat4 viewMatrix = m_viewController.getViewMatrix();
+            glm::mat4 projMatrix = glm::perspective(70.f, (float) m_nWindowWidth / m_nWindowHeight, 0.1f, 10000.f);
 
-            // Get material properties
-            int32_t matIndex = materialIndexes[s];
-
-            glm::vec3 ka = {materials[matIndex].ambient[0], materials[matIndex].ambient[1], materials[matIndex].ambient[2]};
-            std::string kaTexname = materials[matIndex].ambient_texname;
-            bool kaMap = !(kaTexname == "");
-
-            glm::vec3 kd = {materials[matIndex].diffuse[0], materials[matIndex].diffuse[1], materials[matIndex].diffuse[2]};
-            std::string kdTexname = materials[matIndex].diffuse_texname;
-            bool kdMap = !(kdTexname == "");
-
-            glm::vec3 ks = {materials[matIndex].specular[0], materials[matIndex].specular[1], materials[matIndex].specular[2]};
-            std::string ksTexname = materials[matIndex].specular_texname;
-            bool ksMap = !(ksTexname == "");
-
-            float ns = materials[matIndex].shininess;
-            std::string nsTexname = materials[matIndex].specular_highlight_texname;
-            bool nsMap = !(nsTexname == "");
-
-            float d = materials[matIndex].dissolve;
-            std::string dTexname = materials[matIndex].alpha_texname;
-            bool dMap = !(dTexname == "");
-
-            std::string NormalTexname = materials[matIndex].bump_texname;
-            bool NormalMap = !(NormalTexname == "");
-
+            // Send uniforms
+            // Matrices
             glm::mat4 modelMatrix = glm::mat4();
             modelMatrix = glm::translate(modelMatrix, glm::vec3(0, 0, -5));
             modelMatrix = glm::scale(modelMatrix, glm::vec3(0.1, 0.1, 0.1));
 
-            // Send uniforms
             glm::mat4 modelViewMatrix = viewMatrix * modelMatrix;
             glm::mat4 normalMatrix = glm::transpose(glm::inverse(modelViewMatrix));
             glm::mat4 modelViewProjMatrix = projMatrix * modelViewMatrix;
@@ -124,10 +66,93 @@ int Application::run()
             glUniformMatrix4fv(m_uModelViewMatrix_location, 1, GL_FALSE, &modelViewMatrix[0][0]);
             glUniformMatrix4fv(m_uNormalMatrix_location, 1, GL_FALSE, &normalMatrix[0][0]);
 
-            glDrawElements(GL_TRIANGLES, shapes[s].mesh.indices.size(), GL_UNSIGNED_INT, nullptr);
-            glBindVertexArray(0);
+            // Textures
+            glBindSampler(0, m_KaSampler);
+            glBindSampler(1, m_KdSampler);
+            glBindSampler(2, m_KsSampler);
+            glBindSampler(3, m_NsSampler);
+            glBindSampler(4, m_dSampler);
+            glBindSampler(5, m_NormalSampler);
+
+            glUniform1i(m_uKaSampler_location,0);
+            glUniform1i(m_uKdSampler_location, 1);
+            glUniform1i(m_uKsSampler_location, 2);
+            glUniform1i(m_uNsSampler_location, 3);
+            glUniform1i(m_udSampler_location, 4);
+            glUniform1i(m_uNormalSampler_location, 5);
+
+            // Display the model
+            for(size_t s = 0; s < m_objVAOs.size(); ++s) {
+
+                glBindVertexArray(m_objVAOs[s]);
+
+                // Get material properties
+                int32_t matIndex = materialIndexes[s];
+
+                glm::vec3 ka = {materials[matIndex].ambient[0], materials[matIndex].ambient[1], materials[matIndex].ambient[2]};
+                std::string kaTexname = materials[matIndex].ambient_texname;
+                bool kaMap = !(kaTexname == "");
+
+                glm::vec3 kd = {materials[matIndex].diffuse[0], materials[matIndex].diffuse[1], materials[matIndex].diffuse[2]};
+                std::string kdTexname = materials[matIndex].diffuse_texname;
+                bool kdMap = !(kdTexname == "");
+
+                glm::vec3 ks = {materials[matIndex].specular[0], materials[matIndex].specular[1], materials[matIndex].specular[2]};
+                std::string ksTexname = materials[matIndex].specular_texname;
+                bool ksMap = !(ksTexname == "");
+
+                float ns = materials[matIndex].shininess;
+                std::string nsTexname = materials[matIndex].specular_highlight_texname;
+                bool nsMap = !(nsTexname == "");
+
+                float d = materials[matIndex].dissolve;
+                std::string dTexname = materials[matIndex].alpha_texname;
+                bool dMap = !(dTexname == "");
+
+                std::string NormalTexname = materials[matIndex].bump_texname;
+                bool NormalMap = !(NormalTexname == "");
+
+//                glActiveTexture(GL_TEXTURE0);
+                glUniform3f(m_uKa_location, ka[0], ka[1], ka[2]);
+                glUniform1i(m_uKaMap_location, kaMap);
+                if(kaMap)
+                    glBindTextureUnit(0, m_textures[kaTexname]);
+
+//                glActiveTexture(GL_TEXTURE1);
+                glUniform3f(m_uKd_location, kd[0], kd[1], kd[2]);
+                glUniform1i(m_uKdMap_location, kdMap);
+                if(kdMap)
+                    glBindTextureUnit(1, m_textures[kdTexname]);
+
+//                glActiveTexture(GL_TEXTURE2);
+                glUniform3f(m_uKs_location, ks[0], ks[1], ks[2]);
+                glUniform1i(m_uKsMap_location, ksMap);
+                if(ksMap)
+                    glBindTextureUnit(2, m_textures[ksTexname]);
+
+//                glActiveTexture(GL_TEXTURE3);
+                glUniform1i(m_uNsMap_location, nsMap);
+                glUniform1f(m_uNs_location, ns);
+                if(nsMap)
+                    glBindTextureUnit(3, m_textures[nsTexname]);
+
+//                glActiveTexture(GL_TEXTURE4);
+                glUniform1i(m_udMap_location, dMap);
+                glUniform1f(m_ud_location, d);
+                if(dMap)
+                    glBindTextureUnit(4, m_textures[dTexname]);
+
+//                glActiveTexture(GL_TEXTURE5);
+                glUniform1i(m_uNormalMap_location, NormalMap);
+                if(NormalMap)
+                    glBindTextureUnit(5, m_textures[NormalTexname]);
+
+                glDrawElements(GL_TRIANGLES, shapes[s].mesh.indices.size(), GL_UNSIGNED_INT, nullptr);
+                glBindVertexArray(0);
+            }
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         }
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
 
 
         // Blit GBuffer textures
@@ -136,49 +161,29 @@ int Application::run()
         glViewport(0, 0, viewportSize.x, viewportSize.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glNamedFramebufferReadBuffer(m_FBO, GL_COLOR_ATTACHMENT0 + GDiffuse);
+        glNamedFramebufferReadBuffer(m_FBO, GL_COLOR_ATTACHMENT0 + m_CurrentlyDisplayed);
         //glNamedFramebufferDrawBuffer(0, GL_BACK);
         glBlitNamedFramebuffer(m_FBO, 0,
-                               0, 0, m_nWindowWidth/2, m_nWindowHeight,
-                               0, 0, m_nWindowWidth/2, m_nWindowHeight,
+                               0, 0, m_nWindowWidth, m_nWindowHeight,
+                               0, 0, m_nWindowWidth, m_nWindowHeight,
                                GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
         // Shading pass
         /*
-//            glActiveTexture(GL_TEXTURE0);
-            glUniform3f(m_uKa_location, ka[0], ka[1], ka[2]);
-            glUniform1i(m_uKaMap_location, kaMap);
-            if(kaMap)
-                glBindTextureUnit(0, m_textures[kaTexname]);
+            // Lighting
+            glm::vec4 viewDirectionalLightDir = viewMatrix * glm::vec4(directionalLightDir[0], directionalLightDir[1], directionalLightDir[2], 0);
+            viewDirectionalLightDir = glm::normalize(viewDirectionalLightDir);
 
-//            glActiveTexture(GL_TEXTURE1);
-            glUniform3f(m_uKd_location, kd[0], kd[1], kd[2]);
-            glUniform1i(m_uKdMap_location, kdMap);
-            if(kdMap)
-                glBindTextureUnit(1, m_textures[kdTexname]);
+            glUniform3f(m_uDirectionalLightDir_location, viewDirectionalLightDir[0], viewDirectionalLightDir[1], viewDirectionalLightDir[2]);
+            glUniform3f(m_uDirectionalLightColor_location, directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
+            glUniform1f(m_uDirectionalLightIntensity_location, directionalLightIntensity);
 
-//            glActiveTexture(GL_TEXTURE2);
-            glUniform3f(m_uKs_location, ks[0], ks[1], ks[2]);
-            glUniform1i(m_uKsMap_location, ksMap);
-            if(ksMap)
-                glBindTextureUnit(2, m_textures[ksTexname]);
+            glUniform1i(m_uEnablePointLights_location, enablePointLights);
+            glUniform1i(m_uNbPointLights_location, pointLights.size());
 
-//            glActiveTexture(GL_TEXTURE3);
-            glUniform1i(m_uNsMap_location, nsMap);
-            glUniform1f(m_uNs_location, ns);
-            if(nsMap)
-                glBindTextureUnit(3, m_textures[nsTexname]);
+            // Build SSBO
+            //updatePointLightSSBO(pointLights, viewMatrix);
 
-//            glActiveTexture(GL_TEXTURE4);
-            glUniform1i(m_udMap_location, dMap);
-            glUniform1f(m_ud_location, d);
-            if(dMap)
-                glBindTextureUnit(4, m_textures[dTexname]);
-
-//            glActiveTexture(GL_TEXTURE5);
-            glUniform1i(m_uNormalMap_location, NormalMap);
-            if(NormalMap)
-                glBindTextureUnit(5, m_textures[NormalTexname]);
         //*/
 
 
@@ -199,6 +204,15 @@ int Application::run()
 
             if(ImGui::SliderFloat("cameraRotationSpeed", &m_ViewControllerRotationSpeed, 0.001f, 0.1f)) {
                 m_viewController.setRotationSpeed(m_ViewControllerRotationSpeed);
+            }
+
+            if(ImGui::CollapsingHeader("GBuffer"))
+            {
+                for (int32_t i = GPosition; i < GDepth; ++i)
+                {
+                    if (ImGui::RadioButton(m_GBufferTexNames[i], m_CurrentlyDisplayed == i))
+                        m_CurrentlyDisplayed = GBufferTextureType(i);
+                }
             }
 
             ImGui::End();
@@ -520,7 +534,7 @@ Application::Application(int argc, char** argv):
         materialIndexes.push_back(obj.materialIndexes[s]);
     }
 
-//    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
 //    glEnable (GL_BLEND);
 //    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -622,7 +636,7 @@ Application::Application(int argc, char** argv):
     GLenum drawBuffers[] =
             { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2,
               GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4};
-    glNamedFramebufferDrawBuffers(m_FBO, 5, drawBuffers);
+    glNamedFramebufferDrawBuffers(m_FBO, 6, drawBuffers);
 
     GLenum frameBufferStatus = glCheckNamedFramebufferStatus(m_FBO, GL_DRAW_FRAMEBUFFER);
     switch (frameBufferStatus) {

@@ -47,8 +47,8 @@ private:
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
 
-    std::string basedir = m_AssetsRootPath/ m_AppName / "models/nanosuit/";
-    std::string inputfile = basedir + "nanosuit.obj";
+    std::string basedir = m_AssetsRootPath/ m_AppName / "models/crytek-sponza/";
+    std::string inputfile = basedir + "sponza.obj";
 
     const GLint positionAttr_location = 0;
     const GLint normalAttr_location = 1;
@@ -125,10 +125,14 @@ private:
         GDepth, // On doit créer une texture de depth mais on écrit pas directement dedans dans le FS. OpenGL le fait pour nous (et l'utilise).
         GBufferTextureCount
     };
-    GLuint m_GBufferTextures[GBufferTextureCount];
 
     const GLenum m_GBufferTextureFormat[GBufferTextureCount] = {
             GL_RGB32F, GL_RGB32F, GL_RGB32F,
             GL_RGB32F, GL_RGBA32F, GL_DEPTH_COMPONENT32F };
+
+    GLuint m_GBufferTextures[GBufferTextureCount];
     GLuint m_FBO;
+
+    const char * m_GBufferTexNames[GBufferTextureCount] = { "position", "normal", "ambient", "diffuse", "glossyShininess", "depth" };
+    GBufferTextureType m_CurrentlyDisplayed = GDiffuse;
 };
