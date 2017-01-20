@@ -36,22 +36,21 @@ int Application::run()
     for (auto iterationCount = 0u; !m_GLFWHandle.shouldClose(); ++iterationCount)
     {
         const auto seconds = glfwGetTime();
+        const auto viewportSize = m_GLFWHandle.framebufferSize();
+
 
         // Put here rendering code
 
-
-
+        glm::mat4 viewMatrix = m_viewController.getViewMatrix();
+        glm::mat4 projMatrix = glm::perspective(70.f, (float) m_nWindowWidth / m_nWindowHeight, 0.1f, 100.f);
 
         // Geometry Pass
         {
             m_geometryProgram.use();
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_FBO);
 
-            glViewport(0, 0, m_nWindowWidth, m_nWindowHeight);
+            glViewport(0, 0, viewportSize.x, viewportSize.y);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            glm::mat4 viewMatrix = m_viewController.getViewMatrix();
-            glm::mat4 projMatrix = glm::perspective(70.f, (float) m_nWindowWidth / m_nWindowHeight, 0.1f, 10000.f);
 
             // Send uniforms
             // Matrices
@@ -67,12 +66,12 @@ int Application::run()
             glUniformMatrix4fv(m_uNormalMatrix_location, 1, GL_FALSE, &normalMatrix[0][0]);
 
             // Textures
-            glBindSampler(0, m_KaSampler);
-            glBindSampler(1, m_KdSampler);
-            glBindSampler(2, m_KsSampler);
-            glBindSampler(3, m_NsSampler);
-            glBindSampler(4, m_dSampler);
-            glBindSampler(5, m_NormalSampler);
+            glBindSampler(0, m_textureSampler);
+            glBindSampler(1, m_textureSampler);
+            glBindSampler(2, m_textureSampler);
+            glBindSampler(3, m_textureSampler);
+            glBindSampler(4, m_textureSampler);
+            glBindSampler(5, m_textureSampler);
 
             glUniform1i(m_uKaSampler_location,0);
             glUniform1i(m_uKdSampler_location, 1);
@@ -82,10 +81,9 @@ int Application::run()
             glUniform1i(m_uNormalSampler_location, 5);
 
             // Display the model
+
             for(size_t s = 0; s < m_objVAOs.size(); ++s) {
-
                 glBindVertexArray(m_objVAOs[s]);
-
                 // Get material properties
                 int32_t matIndex = materialIndexes[s];
 
@@ -153,23 +151,24 @@ int Application::run()
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         }
 
-
-
-        // Blit GBuffer textures
-        // TODO Change buffer through GUI
-        const auto viewportSize = m_GLFWHandle.framebufferSize();
         glViewport(0, 0, viewportSize.x, viewportSize.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Blit GBuffer textures
+        /*
         glNamedFramebufferReadBuffer(m_FBO, GL_COLOR_ATTACHMENT0 + m_CurrentlyDisplayed);
-        //glNamedFramebufferDrawBuffer(0, GL_BACK);
+        glNamedFramebufferDrawBuffer(0, GL_BACK);
         glBlitNamedFramebuffer(m_FBO, 0,
                                0, 0, m_nWindowWidth, m_nWindowHeight,
                                0, 0, m_nWindowWidth, m_nWindowHeight,
                                GL_COLOR_BUFFER_BIT, GL_LINEAR);
+        //*/
+
 
         // Shading pass
-        /*
+        {
+            m_shadingProgram.use();
+
             // Lighting
             glm::vec4 viewDirectionalLightDir = viewMatrix * glm::vec4(directionalLightDir[0], directionalLightDir[1], directionalLightDir[2], 0);
             viewDirectionalLightDir = glm::normalize(viewDirectionalLightDir);
@@ -182,10 +181,31 @@ int Application::run()
             glUniform1i(m_uNbPointLights_location, pointLights.size());
 
             // Build SSBO
-            //updatePointLightSSBO(pointLights, viewMatrix);
+            updatePointLightSSBO(pointLights, viewMatrix);
+
+            glBindSampler(0, m_textureSampler);
+            glBindSampler(1, m_textureSampler);
+            glBindSampler(2, m_textureSampler);
+            glBindSampler(3, m_textureSampler);
+            glBindSampler(4, m_textureSampler);
+
+            glUniform1i(m_uGPositionSampler_location, 0);
+            glUniform1i(m_uGNormalSampler_location, 1);
+            glUniform1i(m_uGAmbientSampler_location, 2);
+            glUniform1i(m_uGDiffuseSampler_location, 3);
+            glUniform1i(m_uGlossyShininessSampler_location, 4);
+
+            for (int32_t i = GPosition; i < GDepth; ++i)
+            {
+                //glActiveTexture(GL_TEXTURE0 + i);
+                glBindTextureUnit(i, m_GBufferTextures[i]);
+            }
+            glBindVertexArray(m_displayVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glBindVertexArray(0);
+        }
 
         //*/
-
 
         // GUI code:
         ImGui_ImplGlfwGL3_NewFrame();
@@ -463,31 +483,10 @@ Application::Application(int argc, char** argv):
             loadTexture(mp->bump_texname);
         }
     }
-
+    glCreateSamplers(1, &m_textureSampler);
+    glSamplerParameteri(m_textureSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glSamplerParameteri(m_textureSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     // Note: no need to bind a sampler for modifying it: the sampler API is already direct_state_access
-    glCreateSamplers(1, &m_KaSampler);
-    glSamplerParameteri(m_KaSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glSamplerParameteri(m_KaSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glCreateSamplers(1, &m_KdSampler);
-    glSamplerParameteri(m_KdSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glSamplerParameteri(m_KdSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glCreateSamplers(1, &m_KsSampler);
-    glSamplerParameteri(m_KsSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glSamplerParameteri(m_KsSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glCreateSamplers(1, &m_NsSampler);
-    glSamplerParameteri(m_NsSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glSamplerParameteri(m_NsSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glCreateSamplers(1, &m_dSampler);
-    glSamplerParameteri(m_dSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glSamplerParameteri(m_dSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glCreateSamplers(1, &m_NormalSampler);
-    glSamplerParameteri(m_NormalSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glSamplerParameteri(m_NormalSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // Load geometry and build buffers
     ObjGeometry obj = loadObj(attrib, shapes);
@@ -511,9 +510,9 @@ Application::Application(int argc, char** argv):
 
         glVertexArrayVertexBuffer(VAO, vboBindingIndex, m_objVBO, 0, sizeof(Vertex3f3f3f2f));
 
-        glVertexArrayAttribBinding(VAO, positionAttr_location, vboBindingIndex);
-        glEnableVertexArrayAttrib(VAO, positionAttr_location);
-        glVertexArrayAttribFormat(VAO, positionAttr_location, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex3f3f3f2f, position));
+        glVertexArrayAttribBinding(VAO, positionAttr_location_geometry, vboBindingIndex);
+        glEnableVertexArrayAttrib(VAO, positionAttr_location_geometry);
+        glVertexArrayAttribFormat(VAO, positionAttr_location_geometry, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex3f3f3f2f, position));
 
         glVertexArrayAttribBinding(VAO, normalAttr_location, vboBindingIndex);
         glEnableVertexArrayAttrib(VAO, normalAttr_location);
@@ -541,10 +540,10 @@ Application::Application(int argc, char** argv):
 
     // Here we load and compile shaders from the library
     m_geometryProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "GeometryPass.vs.glsl", m_ShadersRootPath / m_AppName / "GeometryPass.fs.glsl" });
-    m_geometryProgram.use();
-
+    m_shadingProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "ShadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "ShadingPass.fs.glsl" });
 
     // Get Locations
+    // Geometry
     m_uModelViewProjMatrix_location = glGetUniformLocation(m_geometryProgram.glId(), "uModelViewProjMatrix");
     m_uModelViewMatrix_location = glGetUniformLocation(m_geometryProgram.glId(), "uModelViewMatrix");
     m_uNormalMatrix_location = glGetUniformLocation(m_geometryProgram.glId(), "uNormalMatrix");
@@ -572,53 +571,58 @@ Application::Application(int argc, char** argv):
     m_uNormalSampler_location = glGetUniformLocation(m_geometryProgram.glId(), "uNormalSampler");
     m_uNormalMap_location = glGetUniformLocation(m_geometryProgram.glId(), "uNormalMap");
 
-    m_uDirectionalLightDir_location = glGetUniformLocation(m_geometryProgram.glId(), "uDirectionalLightDir");
-    m_uDirectionalLightColor_location = glGetUniformLocation(m_geometryProgram.glId(), "uDirectionalLightColor");
-    m_uDirectionalLightIntensity_location = glGetUniformLocation(m_geometryProgram.glId(), "uDirectionalLightIntensity");
+    // Shading
+    m_uGPositionSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGPositionSampler");
+    m_uGNormalSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGNormalSampler");
+    m_uGAmbientSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGAmbientSampler");
+    m_uGDiffuseSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGDiffuseSampler");
+    m_uGlossyShininessSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGlossyShininessSampler");
 
-    m_uEnablePointLights_location = glGetUniformLocation(m_geometryProgram.glId(), "uEnablePointLights");
-    m_uNbPointLights_location = glGetUniformLocation(m_geometryProgram.glId(), "uNbPointLights");
+    m_uDirectionalLightDir_location = glGetUniformLocation(m_shadingProgram.glId(), "uDirectionalLightDir");
+    m_uDirectionalLightColor_location = glGetUniformLocation(m_shadingProgram.glId(), "uDirectionalLightColor");
+    m_uDirectionalLightIntensity_location = glGetUniformLocation(m_shadingProgram.glId(), "uDirectionalLightIntensity");
+
+    m_uEnablePointLights_location = glGetUniformLocation(m_shadingProgram.glId(), "uEnablePointLights");
+    m_uNbPointLights_location = glGetUniformLocation(m_shadingProgram.glId(), "uNbPointLights");
 
     // Build and connect SSBOs
-    /*
     GLuint block_index;
     GLuint binding_point_index;
     glCreateBuffers(1, &m_pointLightPositionSSBO);
     glNamedBufferData(m_pointLightPositionSSBO, 1024, nullptr, GL_DYNAMIC_DRAW);
-    block_index = glGetProgramResourceIndex(m_geometryProgram.glId(), GL_SHADER_STORAGE_BLOCK, "aPointLightPosition");
-    //glShaderStorageBlockBinding(m_geometryProgram.glId(), block_index, pointLightPosition_binding);
+    block_index = glGetProgramResourceIndex(m_shadingProgram.glId(), GL_SHADER_STORAGE_BLOCK, "aPointLightPosition");
+    //glShaderStorageBlockBinding(m_shadingProgram.glId(), block_index, pointLightPosition_binding);
     binding_point_index = 0;
-    glShaderStorageBlockBinding(m_geometryProgram.glId(), block_index, binding_point_index);
+    glShaderStorageBlockBinding(m_shadingProgram.glId(), block_index, binding_point_index);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, m_pointLightPositionSSBO);
     //glBindBufferRange(GL_SHADER_STORAGE_BUFFER, binding_point_index, m_pointLightPositionSSBO, 0, 1024);
 
     glCreateBuffers(1, &m_pointLightColorSSBO);
     glNamedBufferData(m_pointLightColorSSBO, 1024, nullptr, GL_DYNAMIC_DRAW);
-    block_index = glGetProgramResourceIndex(m_geometryProgram.glId(), GL_SHADER_STORAGE_BLOCK, "aPointLightColor");
-    //glShaderStorageBlockBinding(m_geometryProgram.glId(), block_index, pointLightColor_binding);
+    block_index = glGetProgramResourceIndex(m_shadingProgram.glId(), GL_SHADER_STORAGE_BLOCK, "aPointLightColor");
+    //glShaderStorageBlockBinding(m_shadingProgram.glId(), block_index, pointLightColor_binding);
     binding_point_index = 1;
-    glShaderStorageBlockBinding(m_geometryProgram.glId(), block_index, binding_point_index);
+    glShaderStorageBlockBinding(m_shadingProgram.glId(), block_index, binding_point_index);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, m_pointLightColorSSBO);
     //glBindBufferRange(GL_SHADER_STORAGE_BUFFER, binding_point_index, m_pointLightColorSSBO, 0, 1024);
 
     glCreateBuffers(1, &m_pointLightIntensitySSBO);
     glNamedBufferData(m_pointLightIntensitySSBO, 1024, nullptr, GL_DYNAMIC_DRAW);
-    block_index = glGetProgramResourceIndex(m_geometryProgram.glId(), GL_SHADER_STORAGE_BLOCK, "aPointLightIntensity");
-    //glShaderStorageBlockBinding(m_geometryProgram.glId(), block_index, pointLightIntensity_binding);
+    block_index = glGetProgramResourceIndex(m_shadingProgram.glId(), GL_SHADER_STORAGE_BLOCK, "aPointLightIntensity");
+    //glShaderStorageBlockBinding(m_shadingProgram.glId(), block_index, pointLightIntensity_binding);
     binding_point_index = 2;
-    glShaderStorageBlockBinding(m_geometryProgram.glId(), block_index, binding_point_index);
+    glShaderStorageBlockBinding(m_shadingProgram.glId(), block_index, binding_point_index);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, m_pointLightIntensitySSBO);
     //glBindBufferRange(GL_SHADER_STORAGE_BUFFER, binding_point_index, m_pointLightColorSSBO, 0, 1024);
 
     glCreateBuffers(1, &m_pointLightEnabledSSBO);
     glNamedBufferData(m_pointLightEnabledSSBO, 1024, nullptr, GL_DYNAMIC_DRAW);
-    block_index = glGetProgramResourceIndex(m_geometryProgram.glId(), GL_SHADER_STORAGE_BLOCK, "aPointLightEnabled");
-    //glShaderStorageBlockBinding(m_geometryProgram.glId(), block_index, pointLightEnabled_binding);
+    block_index = glGetProgramResourceIndex(m_shadingProgram.glId(), GL_SHADER_STORAGE_BLOCK, "aPointLightEnabled");
+    //glShaderStorageBlockBinding(m_shadingProgram.glId(), block_index, pointLightEnabled_binding);
     binding_point_index = 3;
-    glShaderStorageBlockBinding(m_geometryProgram.glId(), block_index, binding_point_index);
+    glShaderStorageBlockBinding(m_shadingProgram.glId(), block_index, binding_point_index);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, m_pointLightEnabledSSBO);
     //glBindBufferRange(GL_SHADER_STORAGE_BUFFER, binding_point_index, m_pointLightColorSSBO, 0, 1024);
-    //*/
 
     // Deferred Rendering
     // Create GBuffer Textures
@@ -631,8 +635,7 @@ Application::Application(int argc, char** argv):
     glCreateFramebuffers(1, &m_FBO);
     for(int i = 0; i < GBufferTextureCount - 1; ++i)
         glNamedFramebufferTexture(m_FBO, GL_COLOR_ATTACHMENT0 + i, m_GBufferTextures[i], 0);
-    glNamedFramebufferTexture(m_FBO, GL_DEPTH_ATTACHMENT, m_GBufferTextures[5], 0);
-
+    glNamedFramebufferTexture(m_FBO, GL_DEPTH_ATTACHMENT, m_GBufferTextures[GDepth], 0);
     GLenum drawBuffers[] =
             { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2,
               GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4};
@@ -654,6 +657,23 @@ Application::Application(int argc, char** argv):
             break;
         default:
             printf(ANSI_COLOR_RED "Frame Buffer status : other/unknowm error" ANSI_COLOR_RESET "\n");
+            break;
     }
-}
 
+    glCreateBuffers(1, &m_displayVB0);
+    float displayVBOData [] = {
+            -1.f, -1.f, 0.f,
+            3.f, -1.f, 0.f,
+            -1.f, 3.f, 0.f
+    };
+    glNamedBufferStorage(m_displayVB0, sizeof(displayVBOData), displayVBOData, 0);
+
+    glCreateVertexArrays(1, &m_displayVAO);
+    glVertexArrayVertexBuffer(m_displayVAO, vboBindingIndex, m_displayVB0, 0, 3 * sizeof(float));
+
+    glVertexArrayAttribBinding(m_displayVAO, positionAttr_location_shading, vboBindingIndex);
+    glEnableVertexArrayAttrib(m_displayVAO, positionAttr_location_shading);
+    glVertexArrayAttribFormat(m_displayVAO, positionAttr_location_shading, 3, GL_FLOAT, GL_FALSE, 0);
+
+    glVertexArrayElementBuffer(m_displayVAO,m_displayVB0);
+}

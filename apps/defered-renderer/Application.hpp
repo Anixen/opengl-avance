@@ -47,55 +47,50 @@ private:
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
 
-    std::string basedir = m_AssetsRootPath/ m_AppName / "models/crytek-sponza/";
-    std::string inputfile = basedir + "sponza.obj";
+    std::string basedir = m_AssetsRootPath/ m_AppName / "models/nanosuit/";
+    std::string inputfile = basedir + "nanosuit.obj";
 
-    const GLint positionAttr_location = 0;
+
+
+    // Geometry program locations
+    const GLint positionAttr_location_geometry = 0;
     const GLint normalAttr_location = 1;
     const GLint tangentAttr_location = 2;
     const GLint texCoordsAttr_location = 3;
-
-    const GLint pointLightPosition_binding = 4;
-    const GLint pointLightColor_binding = 5;
-    const GLint pointLightIntensity_binding = 6;
-    const GLint pointLightEnabled_binding = 7;
 
     GLint m_uModelViewProjMatrix_location;
     GLint m_uModelViewMatrix_location;
     GLint m_uNormalMatrix_location;
 
-    GLint m_uKa_location;
-    GLuint m_KaSampler = 0;
     GLint m_uKaSampler_location;
-    GLint m_uKaMap_location;
-
-    GLint m_uKd_location;
-    GLuint m_KdSampler = 0;
     GLint m_uKdSampler_location;
-    GLint m_uKdMap_location;
-
-    GLint m_uKs_location;
-    GLuint m_KsSampler = 0;
     GLint m_uKsSampler_location;
-    GLint m_uKsMap_location;
-
-    GLint m_uNs_location;
-    GLuint m_NsSampler = 0;
     GLint m_uNsSampler_location;
-    GLint m_uNsMap_location;
-
-    GLint m_ud_location;
-    GLuint m_dSampler = 0;
     GLint m_udSampler_location;
-    GLint m_udMap_location;
-
-    GLuint m_NormalSampler = 0;
     GLint m_uNormalSampler_location;
+
+    GLint m_uKaMap_location;
+    GLint m_uKdMap_location;
+    GLint m_uKsMap_location;
+    GLint m_uNsMap_location;
+    GLint m_udMap_location;
     GLint m_uNormalMap_location;
 
-    GLuint m_objVBO;
-    std::vector<GLuint> m_objIBOs;
-    std::vector<GLuint> m_objVAOs;
+    GLint m_uKa_location;
+    GLint m_uKd_location;
+    GLint m_uKs_location;
+    GLint m_uNs_location;
+    GLint m_ud_location;
+    // Normal is sent through attributes
+
+    // Shading program locations
+
+    const GLint positionAttr_location_shading = 0;
+
+    const GLint pointLightPosition_binding = 4;
+    const GLint pointLightColor_binding = 5;
+    const GLint pointLightIntensity_binding = 6;
+    const GLint pointLightEnabled_binding = 7;
 
     GLint m_uDirectionalLightDir_location;
     GLint m_uDirectionalLightColor_location;
@@ -103,16 +98,29 @@ private:
 
     GLint m_uEnablePointLights_location;
     GLint m_uNbPointLights_location;
+
     GLuint m_pointLightPositionSSBO;
     GLuint m_pointLightColorSSBO;
     GLuint m_pointLightIntensitySSBO;
     GLuint m_pointLightEnabledSSBO;
 
+    GLint m_uGPositionSampler_location;
+    GLint m_uGNormalSampler_location;
+    GLint m_uGAmbientSampler_location;
+    GLint m_uGDiffuseSampler_location;
+    GLint m_uGlossyShininessSampler_location;
+
+    GLuint m_objVBO;
+    std::vector<GLuint> m_objIBOs;
+    std::vector<GLuint> m_objVAOs;
+
     std::vector<int32_t> materialIndexes;
     std::map<std::string, GLuint> m_textures;
 
     glmlv::GLProgram m_geometryProgram;
+    glmlv::GLProgram m_shadingProgram;
 
+    GLuint m_textureSampler;
 
     // For Deferred Shading
     enum GBufferTextureType
@@ -135,4 +143,7 @@ private:
 
     const char * m_GBufferTexNames[GBufferTextureCount] = { "position", "normal", "ambient", "diffuse", "glossyShininess", "depth" };
     GBufferTextureType m_CurrentlyDisplayed = GDiffuse;
+
+    GLuint m_displayVB0;
+    GLuint m_displayVAO;
 };
