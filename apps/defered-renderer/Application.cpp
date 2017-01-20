@@ -38,11 +38,10 @@ int Application::run()
         const auto seconds = glfwGetTime();
         const auto viewportSize = m_GLFWHandle.framebufferSize();
 
-
         // Put here rendering code
 
         glm::mat4 viewMatrix = m_viewController.getViewMatrix();
-        glm::mat4 projMatrix = glm::perspective(70.f, (float) m_nWindowWidth / m_nWindowHeight, 0.1f, 100.f);
+        glm::mat4 projMatrix = glm::perspective(70.f, (float) m_nWindowWidth / m_nWindowHeight, 0.1f, 10000.f);
 
         // Geometry Pass
         {
@@ -154,58 +153,63 @@ int Application::run()
         glViewport(0, 0, viewportSize.x, viewportSize.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Blit GBuffer textures
-        /*
-        glNamedFramebufferReadBuffer(m_FBO, GL_COLOR_ATTACHMENT0 + m_CurrentlyDisplayed);
-        glNamedFramebufferDrawBuffer(0, GL_BACK);
-        glBlitNamedFramebuffer(m_FBO, 0,
-                               0, 0, m_nWindowWidth, m_nWindowHeight,
-                               0, 0, m_nWindowWidth, m_nWindowHeight,
-                               GL_COLOR_BUFFER_BIT, GL_LINEAR);
-        //*/
 
-
-        // Shading pass
-        {
-            m_shadingProgram.use();
-
-            // Lighting
-            glm::vec4 viewDirectionalLightDir = viewMatrix * glm::vec4(directionalLightDir[0], directionalLightDir[1], directionalLightDir[2], 0);
-            viewDirectionalLightDir = glm::normalize(viewDirectionalLightDir);
-
-            glUniform3f(m_uDirectionalLightDir_location, viewDirectionalLightDir[0], viewDirectionalLightDir[1], viewDirectionalLightDir[2]);
-            glUniform3f(m_uDirectionalLightColor_location, directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
-            glUniform1f(m_uDirectionalLightIntensity_location, directionalLightIntensity);
-
-            glUniform1i(m_uEnablePointLights_location, enablePointLights);
-            glUniform1i(m_uNbPointLights_location, pointLights.size());
-
-            // Build SSBO
-            updatePointLightSSBO(pointLights, viewMatrix);
-
-            glBindSampler(0, m_textureSampler);
-            glBindSampler(1, m_textureSampler);
-            glBindSampler(2, m_textureSampler);
-            glBindSampler(3, m_textureSampler);
-            glBindSampler(4, m_textureSampler);
-
-            glUniform1i(m_uGPositionSampler_location, 0);
-            glUniform1i(m_uGNormalSampler_location, 1);
-            glUniform1i(m_uGAmbientSampler_location, 2);
-            glUniform1i(m_uGDiffuseSampler_location, 3);
-            glUniform1i(m_uGlossyShininessSampler_location, 4);
-
-            for (int32_t i = GPosition; i < GDepth; ++i)
-            {
-                //glActiveTexture(GL_TEXTURE0 + i);
-                glBindTextureUnit(i, m_GBufferTextures[i]);
-            }
-            glBindVertexArray(m_displayVAO);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-            glBindVertexArray(0);
+        if(m_displayGBuffer) {
+            // Blit GBuffer texture
+            glNamedFramebufferReadBuffer(m_FBO, GL_COLOR_ATTACHMENT0 + m_CurrentlyDisplayed);
+//          glNamedFramebufferDrawBuffer(0, GL_BACK);
+            glBlitNamedFramebuffer(m_FBO, 0,
+                                   0, 0, m_nWindowWidth, m_nWindowHeight,
+                                   0, 0, m_nWindowWidth, m_nWindowHeight,
+                                   GL_COLOR_BUFFER_BIT, GL_LINEAR);
         }
+        else
+        {
+            // Shading pass
+            {
+                m_shadingProgram.use();
 
-        //*/
+                // Lighting
+                glm::vec4 viewDirectionalLightDir = viewMatrix * glm::vec4(directionalLightDir[0], directionalLightDir[1], directionalLightDir[2], 0);
+                viewDirectionalLightDir = glm::normalize(viewDirectionalLightDir);
+
+                glUniform3f(m_uDirectionalLightDir_location, viewDirectionalLightDir[0], viewDirectionalLightDir[1], viewDirectionalLightDir[2]);
+                glUniform3f(m_uDirectionalLightColor_location, directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
+                glUniform1f(m_uDirectionalLightIntensity_location, directionalLightIntensity);
+
+                glUniform1i(m_uEnablePointLights_location, enablePointLights);
+                glUniform1i(m_uNbPointLights_location, pointLights.size());
+
+                // Build SSBO
+                updatePointLightSSBO(pointLights, viewMatrix);
+
+                glBindSampler(0, m_textureSampler);
+                glBindSampler(1, m_textureSampler);
+                glBindSampler(2, m_textureSampler);
+                glBindSampler(3, m_textureSampler);
+                glBindSampler(4, m_textureSampler);
+                //glBindSampler(5, m_textureSampler);
+                glBindSampler(5, m_depthSampler);
+
+                glUniform1i(m_uGPositionSampler_location, 0);
+                glUniform1i(m_uGNormalSampler_location, 1);
+                glUniform1i(m_uGAmbientSampler_location, 2);
+                glUniform1i(m_uGDiffuseSampler_location, 3);
+                glUniform1i(m_uGlossyShininessSampler_location, 4);
+                glUniform1i(m_uDepthSampler_location, 5);
+
+                for (int32_t i = GPosition; i < GDepth; ++i)
+                {
+                    //glActiveTexture(GL_TEXTURE0 + i);
+                    glBindTextureUnit(i, m_GBufferTextures[i]);
+                }
+                glBindTextureUnit(5, m_GBufferTextures[GDepth]);
+
+                glBindVertexArray(m_displayVAO);
+                glDrawArrays(GL_TRIANGLES, 0, 3);
+                glBindVertexArray(0);
+            }
+        }
 
         // GUI code:
         ImGui_ImplGlfwGL3_NewFrame();
@@ -228,10 +232,16 @@ int Application::run()
 
             if(ImGui::CollapsingHeader("GBuffer"))
             {
+                if (ImGui::RadioButton("Shaded", m_displayGBuffer == false))
+                    m_displayGBuffer = false;
+
                 for (int32_t i = GPosition; i < GDepth; ++i)
                 {
-                    if (ImGui::RadioButton(m_GBufferTexNames[i], m_CurrentlyDisplayed == i))
+                    if (ImGui::RadioButton(m_GBufferTexNames[i], m_CurrentlyDisplayed == i)){
                         m_CurrentlyDisplayed = GBufferTextureType(i);
+                        m_displayGBuffer = true;
+                    }
+
                 }
             }
 
@@ -577,6 +587,7 @@ Application::Application(int argc, char** argv):
     m_uGAmbientSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGAmbientSampler");
     m_uGDiffuseSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGDiffuseSampler");
     m_uGlossyShininessSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGlossyShininessSampler");
+    m_uDepthSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uDepthSampler");
 
     m_uDirectionalLightDir_location = glGetUniformLocation(m_shadingProgram.glId(), "uDirectionalLightDir");
     m_uDirectionalLightColor_location = glGetUniformLocation(m_shadingProgram.glId(), "uDirectionalLightColor");
@@ -676,4 +687,11 @@ Application::Application(int argc, char** argv):
     glVertexArrayAttribFormat(m_displayVAO, positionAttr_location_shading, 3, GL_FLOAT, GL_FALSE, 0);
 
     glVertexArrayElementBuffer(m_displayVAO,m_displayVB0);
+
+    glCreateSamplers(1, &m_depthSampler);
+    glSamplerParameteri(m_depthSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glSamplerParameteri(m_depthSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glSamplerParameteri(m_depthSampler, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+
+    glCreateTextures(GL_TEXTURE_2D, 1, &m_depthTexture);
 }

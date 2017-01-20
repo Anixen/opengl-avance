@@ -32,7 +32,7 @@ layout(location = 1) out vec3 fNormal;
 layout(location = 2) out vec3 fAmbient;
 layout(location = 3) out vec3 fDiffuse;
 layout(location = 4) out vec4 fGlossyShininess;
-
+//layout(location = 5) out vec4 fDepth;
 
 vec3 bumpedNormal(vec4 normalTexel)
 {
@@ -81,6 +81,7 @@ void main()
         texelNormal = texture(uNormalSampler, vTexCoords);
         normal = bumpedNormal(texelNormal);
     }
+    normal = normalize(normal);
 
     vec3 Ka = uKa * texelKa.rgb;
     vec3 Kd = uKd * texelKd.rgb;
@@ -94,4 +95,5 @@ void main()
     fAmbient = Ka;
     fDiffuse = Kd;
     fGlossyShininess = vec4(Ks, Ns);
+    //fDepth = vec3(gl_FragCoord.z, 1.f);
 }

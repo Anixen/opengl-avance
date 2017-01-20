@@ -33,7 +33,7 @@ private:
     const size_t m_nWindowHeight = 720;
     glmlv::GLFWHandle m_GLFWHandle{ m_nWindowWidth, m_nWindowHeight, "Template" }; // Note: the handle must be declared before the creation of any object managing OpenGL resource (e.g. GLProgram, GLShader)
 
-    float m_ViewControllerSpeed = 100.f;
+    float m_ViewControllerSpeed = 80.f;
     float m_ViewControllerRotationSpeed = 0.01f;
     glmlv::ViewController m_viewController{m_GLFWHandle.window(), m_ViewControllerSpeed, m_ViewControllerRotationSpeed};
 
@@ -47,8 +47,8 @@ private:
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
 
-    std::string basedir = m_AssetsRootPath/ m_AppName / "models/nanosuit/";
-    std::string inputfile = basedir + "nanosuit.obj";
+    std::string basedir = m_AssetsRootPath/ m_AppName / "models/crytek-sponza/";
+    std::string inputfile = basedir + "sponza.obj";
 
 
 
@@ -109,6 +109,7 @@ private:
     GLint m_uGAmbientSampler_location;
     GLint m_uGDiffuseSampler_location;
     GLint m_uGlossyShininessSampler_location;
+    GLint m_uDepthSampler_location;
 
     GLuint m_objVBO;
     std::vector<GLuint> m_objIBOs;
@@ -143,7 +144,11 @@ private:
 
     const char * m_GBufferTexNames[GBufferTextureCount] = { "position", "normal", "ambient", "diffuse", "glossyShininess", "depth" };
     GBufferTextureType m_CurrentlyDisplayed = GDiffuse;
+    bool m_displayGBuffer = false;
 
     GLuint m_displayVB0;
     GLuint m_displayVAO;
+
+    GLuint m_depthSampler;
+    GLuint m_depthTexture;
 };
