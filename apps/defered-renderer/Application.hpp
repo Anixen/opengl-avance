@@ -35,6 +35,8 @@ private:
     const size_t m_nWindowHeight = 720;
     glmlv::GLFWHandle m_GLFWHandle{ m_nWindowWidth, m_nWindowHeight, "Template" }; // Note: the handle must be declared before the creation of any object managing OpenGL resource (e.g. GLProgram, GLShader)
 
+    float m_near = 0.1f;
+    float m_far = 1000.f;
     float m_ViewControllerSpeed = 80.f;
     float m_ViewControllerRotationSpeed = 0.01f;
     glmlv::ViewController m_viewController{m_GLFWHandle.window(), m_ViewControllerSpeed, m_ViewControllerRotationSpeed};
@@ -149,6 +151,7 @@ private:
 
     // Depth program locations
     glmlv::GLProgram m_depthProgram;
+    GLint m_uAdjustment_location;
     GLint m_uGDepthSampler_location;
 
     GLuint m_depthTexture;

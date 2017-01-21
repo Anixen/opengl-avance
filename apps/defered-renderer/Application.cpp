@@ -41,7 +41,7 @@ int Application::run()
         // Put here rendering code
 
         glm::mat4 viewMatrix = m_viewController.getViewMatrix();
-        glm::mat4 projMatrix = glm::perspective(70.f, (float) m_nWindowWidth / m_nWindowHeight, 0.1f, 10000.f);
+        glm::mat4 projMatrix = glm::perspective(70.f, (float) m_nWindowWidth / m_nWindowHeight, m_near, m_far);
 
         // Geometry Pass
         {
@@ -201,6 +201,8 @@ int Application::run()
             glUniform1i(m_uGDepthSampler_location, 0);
             glBindTextureUnit(0, m_GBufferTextures[GDepth]);
 
+            glUniform1f(m_uAdjustment_location, m_far - m_near);
+
             glBindVertexArray(m_displayVAO);
             glDrawArrays(GL_TRIANGLES, 0, 3);
             glBindVertexArray(0);
@@ -232,6 +234,9 @@ int Application::run()
             if(ImGui::SliderFloat("cameraRotationSpeed", &m_ViewControllerRotationSpeed, 0.001f, 0.1f)) {
                 m_viewController.setRotationSpeed(m_ViewControllerRotationSpeed);
             }
+
+            ImGui::DragFloat("near", &m_near, 1.f, 0.01f, 1.f, "%.3f", 1.2f);
+            ImGui::DragFloat("far", &m_far, 1.f, 100.f, 1000000.f, "%.3f", 1.2f);
 
             if(ImGui::CollapsingHeader("GBuffer"))
             {
@@ -640,6 +645,7 @@ Application::Application(int argc, char** argv):
     // Depth
     m_depthProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "ShadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "DepthPass.fs.glsl" });
 
+    m_uAdjustment_location = glGetUniformLocation(m_depthProgram.glId(), "uAdjustment");
     m_uGDepthSampler_location = glGetUniformLocation(m_depthProgram.glId(), "uDepthSampler");
 
     // Deferred Rendering
