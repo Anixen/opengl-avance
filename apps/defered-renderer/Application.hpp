@@ -149,12 +149,13 @@ private:
     GLint m_uGAmbientSampler_location;
     GLint m_uGDiffuseSampler_location;
     GLint m_uGlossyShininessSampler_location;
+    GLint m_uGDepthSampler_location_shading;
 
     // Depth program locations
     glmlv::GLProgram m_depthProgram;
 
     GLint m_uAdjustment_location_depth;
-    GLint m_uGDepthSampler_location;
+    GLint m_uGDepthSampler_location_depth;
 
     // Position program locations
     glmlv::GLProgram m_positionProgram;

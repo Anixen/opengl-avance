@@ -5,6 +5,7 @@ uniform sampler2D uGNormalSampler;
 uniform sampler2D uGAmbientSampler;
 uniform sampler2D uGDiffuseSampler;
 uniform sampler2D uGlossyShininessSampler;
+uniform sampler2D uGDepthSampler;
 
 uniform vec3 uDirectionalLightDir;
 uniform vec3 uDirectionalLightColor;
@@ -50,6 +51,35 @@ vec3 blinnPhong(vec3 position, vec3 normal, vec3 Ka, vec3 Kd, vec3 Ks, float Ns,
     return Li * (Ka + Kd * max(0.f, dot(wi, N)) + Ks * pow(max(0.f, dot(halfVector, N)), Ns));
 }
 
+//vec3 blinnPhong(vec3 position, vec3 normal, vec3 Ka, vec3 Kd, vec3 Ks, float Ns,
+//                vec3 lightColor, float lightIntensity, vec3 lightDirection, float distance) {
+//
+//    vec3 eyeDir = normalize(-position);
+//
+//    float distToPointLight = length(lightPosition - position);
+//    vec3 dirToPointLight = (lightPosition - position) / distance;
+//    vec3 pointLightIncidentLight = (lightColor * lightIntensity) / (distance * distance);
+//
+//    // half vectors, for blinn-phong shading
+//    vec3 hPointLight = normalize(eyeDir + lightDirection);
+//    vec3 hDirLight = normalize(eyeDir + uDirectionalLightDir);
+//
+//    float dothPointLight = shininess == 0 ? 1.f : max(0.f, dot(normal, hPointLight));
+//    float dothDirLight = shininess == 0 ? 1.f :max(0.f, dot(normal, hDirLight));
+//
+//    if (shininess != 1.f && shininess != 0.f)
+//    {
+//        dothPointLight = pow(dothPointLight, shininess);
+//        dothDirLight = pow(dothDirLight, shininess);
+//    }
+//
+//    vec3 contribution = Ka;
+//    contribution += Kd * (uDirectionalLightIntensity * max(0.f, dot(normal, uDirectionalLightDir)) + pointLightIncidentLight * max(0., dot(normal, dirToPointLight)));
+//    contribution += Ks * (pointLightIncidentLight * dothPointLight);
+//
+//    return contribution;
+//}
+
 
 void main()
 {
@@ -61,6 +91,7 @@ void main()
     vec3 Ks = glossyShininess.rgb;
     float Ns = glossyShininess.a;
     //float d = 1.f;
+    float depth = texelFetch(uGDepthSampler, ivec2(gl_FragCoord.xy), 0).r;
 
     vec3 contribution = vec3(0, 0, 0);
     contribution += blinnPhong( position, normal, Ka, Kd, Ks, Ns,
@@ -77,4 +108,7 @@ void main()
         }
 
     fColor = vec4(contribution, 1.f);
+
+    if(depth == 1.f)
+        fColor = vec4(0, 0, 0, 0.f);
 }

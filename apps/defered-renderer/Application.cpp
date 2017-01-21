@@ -181,14 +181,16 @@ int Application::run()
                 glBindSampler(2, m_textureSampler);
                 glBindSampler(3, m_textureSampler);
                 glBindSampler(4, m_textureSampler);
+                glBindSampler(5, m_textureSampler);
 
                 glUniform1i(m_uGPositionSampler_location, 0);
                 glUniform1i(m_uGNormalSampler_location, 1);
                 glUniform1i(m_uGAmbientSampler_location, 2);
                 glUniform1i(m_uGDiffuseSampler_location, 3);
                 glUniform1i(m_uGlossyShininessSampler_location, 4);
+                glUniform1i(m_uGDepthSampler_location_shading, 5);
 
-                for (int32_t i = GPosition; i < GDepth; ++i)
+                for (int32_t i = GPosition; i < GBufferTextureCount; ++i)
                     glBindTextureUnit(i, m_GBufferTextures[i]);
 
                 glBindVertexArray(m_displayVAO);
@@ -220,7 +222,7 @@ int Application::run()
             m_depthProgram.use();
 
             glBindSampler(0, m_textureSampler);
-            glUniform1i(m_uGDepthSampler_location, 0);
+            glUniform1i(m_uGDepthSampler_location_depth, 0);
             glBindTextureUnit(0, m_GBufferTextures[GDepth]);
 
             glUniform1f(m_uAdjustment_location_depth, m_far - m_near);
@@ -617,6 +619,7 @@ Application::Application(int argc, char** argv):
     m_uGAmbientSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGAmbientSampler");
     m_uGDiffuseSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGDiffuseSampler");
     m_uGlossyShininessSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGlossyShininessSampler");
+    m_uGDepthSampler_location_shading = glGetUniformLocation(m_shadingProgram.glId(), "uGDepthSampler");
 
     m_uDirectionalLightDir_location = glGetUniformLocation(m_shadingProgram.glId(), "uDirectionalLightDir");
     m_uDirectionalLightColor_location = glGetUniformLocation(m_shadingProgram.glId(), "uDirectionalLightColor");
@@ -668,7 +671,7 @@ Application::Application(int argc, char** argv):
     m_depthProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "ShadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "DepthPass.fs.glsl" });
 
     m_uAdjustment_location_depth = glGetUniformLocation(m_depthProgram.glId(), "uAdjustment");
-    m_uGDepthSampler_location = glGetUniformLocation(m_depthProgram.glId(), "uGDepthSampler");
+    m_uGDepthSampler_location_depth = glGetUniformLocation(m_depthProgram.glId(), "uGDepthSampler");
 
     // Depth
     m_positionProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "ShadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "PositionPass.fs.glsl" });
