@@ -5,7 +5,6 @@ uniform sampler2D uGNormalSampler;
 uniform sampler2D uGAmbientSampler;
 uniform sampler2D uGDiffuseSampler;
 uniform sampler2D uGlossyShininessSampler;
-uniform sampler2D uGDepthSampler;
 
 uniform vec3 uDirectionalLightDir;
 uniform vec3 uDirectionalLightColor;
@@ -62,7 +61,6 @@ void main()
     vec3 Ks = glossyShininess.rgb;
     float Ns = glossyShininess.a;
     //float d = 1.f;
-    float depth = (vec4(texelFetch(uGDepthSampler, ivec2(gl_FragCoord.xy), 0)).x  + 0.5) * 0.5f;
 
     vec3 contribution = vec3(0, 0, 0);
     contribution += blinnPhong( position, normal, Ka, Kd, Ks, Ns,
@@ -79,6 +77,4 @@ void main()
         }
 
     fColor = vec4(contribution, 1.f);
-
-    //fColor = vec4(depth, depth, depth, 1.f);
 }

@@ -29,6 +29,8 @@ private:
     void loadTexture(std::string texName);
     void updatePointLightSSBO(const std::vector<PointLight>& pointLights, const glm::mat4& viewMatrix);
 
+    void initShadersData();
+
     const size_t m_nWindowWidth = 1280;
     const size_t m_nWindowHeight = 720;
     glmlv::GLFWHandle m_GLFWHandle{ m_nWindowWidth, m_nWindowHeight, "Template" }; // Note: the handle must be declared before the creation of any object managing OpenGL resource (e.g. GLProgram, GLShader)
@@ -51,8 +53,8 @@ private:
     std::string inputfile = basedir + "sponza.obj";
 
 
-
     // Geometry program locations
+    glmlv::GLProgram m_geometryProgram;
     const GLint positionAttr_location_geometry = 0;
     const GLint normalAttr_location = 1;
     const GLint tangentAttr_location = 2;
@@ -83,43 +85,12 @@ private:
     GLint m_ud_location;
     // Normal is sent through attributes
 
-    // Shading program locations
-
-    const GLint positionAttr_location_shading = 0;
-
-    const GLint pointLightPosition_binding = 4;
-    const GLint pointLightColor_binding = 5;
-    const GLint pointLightIntensity_binding = 6;
-    const GLint pointLightEnabled_binding = 7;
-
-    GLint m_uDirectionalLightDir_location;
-    GLint m_uDirectionalLightColor_location;
-    GLint m_uDirectionalLightIntensity_location;
-
-    GLint m_uEnablePointLights_location;
-    GLint m_uNbPointLights_location;
-
-    GLuint m_pointLightPositionSSBO;
-    GLuint m_pointLightColorSSBO;
-    GLuint m_pointLightIntensitySSBO;
-    GLuint m_pointLightEnabledSSBO;
-
-    GLint m_uGPositionSampler_location;
-    GLint m_uGNormalSampler_location;
-    GLint m_uGAmbientSampler_location;
-    GLint m_uGDiffuseSampler_location;
-    GLint m_uGlossyShininessSampler_location;
-    GLint m_uDepthSampler_location;
-
     GLuint m_objVBO;
     std::vector<GLuint> m_objIBOs;
     std::vector<GLuint> m_objVAOs;
 
     std::vector<int32_t> materialIndexes;
     std::map<std::string, GLuint> m_textures;
-
-    glmlv::GLProgram m_geometryProgram;
-    glmlv::GLProgram m_shadingProgram;
 
     GLuint m_textureSampler;
 
@@ -149,6 +120,36 @@ private:
     GLuint m_displayVB0;
     GLuint m_displayVAO;
 
-    GLuint m_depthSampler;
+    // Shading program locations
+    glmlv::GLProgram m_shadingProgram;
+    const GLint positionAttr_location_shading = 0;
+
+    const GLint pointLightPosition_binding = 4;
+    const GLint pointLightColor_binding = 5;
+    const GLint pointLightIntensity_binding = 6;
+    const GLint pointLightEnabled_binding = 7;
+
+    GLint m_uDirectionalLightDir_location;
+    GLint m_uDirectionalLightColor_location;
+    GLint m_uDirectionalLightIntensity_location;
+
+    GLint m_uEnablePointLights_location;
+    GLint m_uNbPointLights_location;
+
+    GLuint m_pointLightPositionSSBO;
+    GLuint m_pointLightColorSSBO;
+    GLuint m_pointLightIntensitySSBO;
+    GLuint m_pointLightEnabledSSBO;
+
+    GLint m_uGPositionSampler_location;
+    GLint m_uGNormalSampler_location;
+    GLint m_uGAmbientSampler_location;
+    GLint m_uGDiffuseSampler_location;
+    GLint m_uGlossyShininessSampler_location;
+
+    // Depth program locations
+    glmlv::GLProgram m_depthProgram;
+    GLint m_uGDepthSampler_location;
+
     GLuint m_depthTexture;
 };

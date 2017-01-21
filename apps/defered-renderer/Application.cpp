@@ -154,17 +154,7 @@ int Application::run()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-        if(m_displayGBuffer) {
-            // Blit GBuffer texture
-            glNamedFramebufferReadBuffer(m_FBO, GL_COLOR_ATTACHMENT0 + m_CurrentlyDisplayed);
-//          glNamedFramebufferDrawBuffer(0, GL_BACK);
-            glBlitNamedFramebuffer(m_FBO, 0,
-                                   0, 0, m_nWindowWidth, m_nWindowHeight,
-                                   0, 0, m_nWindowWidth, m_nWindowHeight,
-                                   GL_COLOR_BUFFER_BIT, GL_LINEAR);
-        }
-        else
-        {
+        if(m_CurrentlyDisplayed == GBufferTextureCount) {
             // Shading pass
             {
                 m_shadingProgram.use();
@@ -188,27 +178,40 @@ int Application::run()
                 glBindSampler(2, m_textureSampler);
                 glBindSampler(3, m_textureSampler);
                 glBindSampler(4, m_textureSampler);
-                //glBindSampler(5, m_textureSampler);
-                glBindSampler(5, m_depthSampler);
 
                 glUniform1i(m_uGPositionSampler_location, 0);
                 glUniform1i(m_uGNormalSampler_location, 1);
                 glUniform1i(m_uGAmbientSampler_location, 2);
                 glUniform1i(m_uGDiffuseSampler_location, 3);
                 glUniform1i(m_uGlossyShininessSampler_location, 4);
-                glUniform1i(m_uDepthSampler_location, 5);
 
                 for (int32_t i = GPosition; i < GDepth; ++i)
-                {
-                    //glActiveTexture(GL_TEXTURE0 + i);
                     glBindTextureUnit(i, m_GBufferTextures[i]);
-                }
-                glBindTextureUnit(5, m_GBufferTextures[GDepth]);
 
                 glBindVertexArray(m_displayVAO);
                 glDrawArrays(GL_TRIANGLES, 0, 3);
                 glBindVertexArray(0);
             }
+        }
+        else if(m_CurrentlyDisplayed == GDepth) {
+            // Depth pass
+            m_depthProgram.use();
+
+            glBindSampler(0, m_textureSampler);
+            glUniform1i(m_uGDepthSampler_location, 0);
+            glBindTextureUnit(0, m_GBufferTextures[GDepth]);
+
+            glBindVertexArray(m_displayVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glBindVertexArray(0);
+        }
+        else {
+            // Blit GBuffer texture
+            glNamedFramebufferReadBuffer(m_FBO, GL_COLOR_ATTACHMENT0 + m_CurrentlyDisplayed);
+            glBlitNamedFramebuffer(m_FBO, 0,
+                                   0, 0, m_nWindowWidth, m_nWindowHeight,
+                                   0, 0, m_nWindowWidth, m_nWindowHeight,
+                                   GL_COLOR_BUFFER_BIT, GL_LINEAR);
         }
 
         // GUI code:
@@ -232,16 +235,15 @@ int Application::run()
 
             if(ImGui::CollapsingHeader("GBuffer"))
             {
-                if (ImGui::RadioButton("Shaded", m_displayGBuffer == false))
-                    m_displayGBuffer = false;
+                if (ImGui::RadioButton("Shaded", m_CurrentlyDisplayed == GBufferTextureCount)){
+                    m_CurrentlyDisplayed = GBufferTextureCount;
+                }
 
-                for (int32_t i = GPosition; i < GDepth; ++i)
+                for (int32_t i = GPosition; i < GBufferTextureCount; ++i)
                 {
                     if (ImGui::RadioButton(m_GBufferTexNames[i], m_CurrentlyDisplayed == i)){
                         m_CurrentlyDisplayed = GBufferTextureType(i);
-                        m_displayGBuffer = true;
                     }
-
                 }
             }
 
@@ -549,11 +551,10 @@ Application::Application(int argc, char** argv):
 
 
     // Here we load and compile shaders from the library
-    m_geometryProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "GeometryPass.vs.glsl", m_ShadersRootPath / m_AppName / "GeometryPass.fs.glsl" });
-    m_shadingProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "ShadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "ShadingPass.fs.glsl" });
 
-    // Get Locations
     // Geometry
+    m_geometryProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "GeometryPass.vs.glsl", m_ShadersRootPath / m_AppName / "GeometryPass.fs.glsl" });
+
     m_uModelViewProjMatrix_location = glGetUniformLocation(m_geometryProgram.glId(), "uModelViewProjMatrix");
     m_uModelViewMatrix_location = glGetUniformLocation(m_geometryProgram.glId(), "uModelViewMatrix");
     m_uNormalMatrix_location = glGetUniformLocation(m_geometryProgram.glId(), "uNormalMatrix");
@@ -582,12 +583,13 @@ Application::Application(int argc, char** argv):
     m_uNormalMap_location = glGetUniformLocation(m_geometryProgram.glId(), "uNormalMap");
 
     // Shading
+    m_shadingProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "ShadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "ShadingPass.fs.glsl" });
+
     m_uGPositionSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGPositionSampler");
     m_uGNormalSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGNormalSampler");
     m_uGAmbientSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGAmbientSampler");
     m_uGDiffuseSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGDiffuseSampler");
     m_uGlossyShininessSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uGlossyShininessSampler");
-    m_uDepthSampler_location = glGetUniformLocation(m_shadingProgram.glId(), "uDepthSampler");
 
     m_uDirectionalLightDir_location = glGetUniformLocation(m_shadingProgram.glId(), "uDirectionalLightDir");
     m_uDirectionalLightColor_location = glGetUniformLocation(m_shadingProgram.glId(), "uDirectionalLightColor");
@@ -634,6 +636,11 @@ Application::Application(int argc, char** argv):
     glShaderStorageBlockBinding(m_shadingProgram.glId(), block_index, binding_point_index);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, m_pointLightEnabledSSBO);
     //glBindBufferRange(GL_SHADER_STORAGE_BUFFER, binding_point_index, m_pointLightColorSSBO, 0, 1024);
+
+    // Depth
+    m_depthProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "ShadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "DepthPass.fs.glsl" });
+
+    m_uGDepthSampler_location = glGetUniformLocation(m_depthProgram.glId(), "uDepthSampler");
 
     // Deferred Rendering
     // Create GBuffer Textures
@@ -688,10 +695,5 @@ Application::Application(int argc, char** argv):
 
     glVertexArrayElementBuffer(m_displayVAO,m_displayVB0);
 
-    glCreateSamplers(1, &m_depthSampler);
-    glSamplerParameteri(m_depthSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glSamplerParameteri(m_depthSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glSamplerParameteri(m_depthSampler, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-
-    glCreateTextures(GL_TEXTURE_2D, 1, &m_depthTexture);
+    //glCreateTextures(GL_TEXTURE_2D, 1, &m_depthTexture);
 }
