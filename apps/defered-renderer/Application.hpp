@@ -124,6 +124,7 @@ private:
 
     // Shading program locations
     glmlv::GLProgram m_shadingProgram;
+
     const GLint positionAttr_location_shading = 0;
 
     const GLint pointLightPosition_binding = 4;
@@ -151,8 +152,15 @@ private:
 
     // Depth program locations
     glmlv::GLProgram m_depthProgram;
-    GLint m_uAdjustment_location;
+
+    GLint m_uAdjustment_location_depth;
     GLint m_uGDepthSampler_location;
+
+    // Position program locations
+    glmlv::GLProgram m_positionProgram;
+
+    GLint m_uAdjustment_location_position;
+    GLint m_uGPositionSampler_location_position;
 
     GLuint m_depthTexture;
 };

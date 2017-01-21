@@ -8,7 +8,10 @@
 #include <glmlv/Image2DRGBA.hpp>
 #include <strstream>
 #include <tiny_obj_loader.h>
-//#include <tiny_obj_loader.h>
+
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/io.hpp>
 
 using namespace glmlv;
 
@@ -193,6 +196,25 @@ int Application::run()
                 glBindVertexArray(0);
             }
         }
+        else if(m_CurrentlyDisplayed == GPosition) {
+            // Position pass
+            m_positionProgram.use();
+
+            glBindSampler(0, m_textureSampler);
+            glUniform1i(m_uGPositionSampler_location_position, 0);
+            glBindTextureUnit(0, m_GBufferTextures[GPosition]);
+
+            const auto rcpProjMat = glm::inverse(projMatrix);
+
+            const glm::vec4 frustrumTopRight(1, 1, 1, 1);
+            const auto frustrumTopRight_view = rcpProjMat * frustrumTopRight;
+
+            glUniform3fv(m_uAdjustment_location_position, 1, glm::value_ptr(frustrumTopRight_view / frustrumTopRight_view.w));
+
+            glBindVertexArray(m_displayVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glBindVertexArray(0);
+        }
         else if(m_CurrentlyDisplayed == GDepth) {
             // Depth pass
             m_depthProgram.use();
@@ -201,7 +223,7 @@ int Application::run()
             glUniform1i(m_uGDepthSampler_location, 0);
             glBindTextureUnit(0, m_GBufferTextures[GDepth]);
 
-            glUniform1f(m_uAdjustment_location, m_far - m_near);
+            glUniform1f(m_uAdjustment_location_depth, m_far - m_near);
 
             glBindVertexArray(m_displayVAO);
             glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -645,8 +667,15 @@ Application::Application(int argc, char** argv):
     // Depth
     m_depthProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "ShadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "DepthPass.fs.glsl" });
 
-    m_uAdjustment_location = glGetUniformLocation(m_depthProgram.glId(), "uAdjustment");
-    m_uGDepthSampler_location = glGetUniformLocation(m_depthProgram.glId(), "uDepthSampler");
+    m_uAdjustment_location_depth = glGetUniformLocation(m_depthProgram.glId(), "uAdjustment");
+    m_uGDepthSampler_location = glGetUniformLocation(m_depthProgram.glId(), "uGDepthSampler");
+
+    // Depth
+    m_positionProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "ShadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "PositionPass.fs.glsl" });
+
+    m_uAdjustment_location_position = glGetUniformLocation(m_positionProgram.glId(), "uAdjustment");
+    m_uGPositionSampler_location_position = glGetUniformLocation(m_positionProgram.glId(), "uGPositionSampler");
+
 
     // Deferred Rendering
     // Create GBuffer Textures
